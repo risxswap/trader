@@ -1,6 +1,7 @@
 package cc.riskswap.trader.admin.test.controller;
 
 import cc.riskswap.trader.admin.controller.SystemTaskController;
+import jakarta.validation.Valid;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ class SystemTaskControllerRouteTest {
         assertTrue(list.isAnnotationPresent(PostMapping.class));
         assertTrue(update.isAnnotationPresent(PostMapping.class));
         assertTrue(trigger.isAnnotationPresent(PostMapping.class));
+        assertTrue(update.getParameters()[0].isAnnotationPresent(Valid.class));
     }
 
     @Test

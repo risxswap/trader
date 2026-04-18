@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -59,6 +60,8 @@ public class SystemTaskServiceTest {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
         SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
@@ -85,6 +88,7 @@ public class SystemTaskServiceTest {
         Assertions.assertNotNull(updated.getVersion());
         Assertions.assertTrue(updated.getVersion() > 7L);
         Assertions.assertNotNull(updated.getUpdatedAt());
+        Mockito.verify(hashOperations).put(Mockito.eq("trader:task:instances:COLLECTOR"), Mockito.eq("fundSync"), Mockito.anyString());
 
         ArgumentCaptor<TraderTaskRefreshMessage> messageCaptor = ArgumentCaptor.forClass(TraderTaskRefreshMessage.class);
         Mockito.verify(refreshPublisher).publish(messageCaptor.capture());
@@ -127,7 +131,9 @@ public class SystemTaskServiceTest {
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
         Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
         SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
@@ -153,6 +159,7 @@ public class SystemTaskServiceTest {
         Assertions.assertEquals("STOPPED", savedTask.getStatus());
         Assertions.assertEquals("{\"fullSync\":false}", savedTask.getParamsJson());
         Assertions.assertEquals("手工创建", savedTask.getRemark());
+        Mockito.verify(hashOperations).put(Mockito.eq("trader:task:instances:COLLECTOR"), Mockito.eq("fundSync"), Mockito.anyString());
 
         ArgumentCaptor<TraderTaskRefreshMessage> messageCaptor = ArgumentCaptor.forClass(TraderTaskRefreshMessage.class);
         Mockito.verify(refreshPublisher).publish(messageCaptor.capture());
@@ -167,6 +174,8 @@ public class SystemTaskServiceTest {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
         SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
@@ -178,6 +187,7 @@ public class SystemTaskServiceTest {
 
         systemTaskService.deleteInstance(param);
 
+        Mockito.verify(hashOperations).delete("trader:task:instances:COLLECTOR", "fundSync");
         ArgumentCaptor<TraderTaskRefreshMessage> messageCaptor = ArgumentCaptor.forClass(TraderTaskRefreshMessage.class);
         Mockito.verify(refreshPublisher).publish(messageCaptor.capture());
         TraderTaskRefreshMessage message = messageCaptor.getValue();
@@ -190,7 +200,7 @@ public class SystemTaskServiceTest {
         SystemTask task = new SystemTask();
         task.setId(1L);
         task.setAppName("trader-collector");
-        task.setAppName("COLLECTOR");
+        task.setTaskType("COLLECTOR");
         task.setTaskCode("fundSync");
         task.setTaskName("同步基金");
         task.setCron("0 0 1 * * ?");

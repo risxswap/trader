@@ -20,6 +20,25 @@
 ./mvnw clean install -DskipTests
 ```
 
+## 统一构建脚本
+
+仓库根目录提供统一构建入口：
+
+```bash
+# 打包单个顶层模块
+./build.sh package trader-admin
+./build.sh package trader-base
+./build.sh package trader-collector
+./build.sh package trader-executor
+./build.sh package trader-statistic
+
+# 全量 install，跳过测试
+./build.sh full-install
+
+# 查看帮助
+./build.sh help
+```
+
 ## 文档指引
 
 有关详细的项目架构、部署说明以及业务模块设计，请参阅：

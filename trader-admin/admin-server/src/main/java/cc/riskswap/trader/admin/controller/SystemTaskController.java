@@ -49,7 +49,7 @@ public class SystemTaskController {
     }
 
     @PostMapping("/update")
-    public ResData<Void> update(@RequestBody SystemTaskUpdateParam param) {
+    public ResData<Void> update(@Valid @RequestBody SystemTaskUpdateParam param) {
         systemTaskService.update(param);
         return ResData.success();
     }

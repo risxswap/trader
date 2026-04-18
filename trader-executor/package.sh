@@ -4,9 +4,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-ARTIFACT_ID="$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.artifactId)"
+MVNW="$ROOT_DIR/mvnw"
+if [[ ! -f "$MVNW" && -f "$ROOT_DIR/../mvnw" ]]; then
+  MVNW="$ROOT_DIR/../mvnw"
+fi
+if [[ ! -f "$MVNW" ]]; then
+  echo "Cannot find Maven Wrapper: $MVNW"
+  exit 1
+fi
+chmod +x "$MVNW"
 
-./mvnw -DskipTests package
+ARTIFACT_ID="$("$MVNW" -q -DforceStdout help:evaluate -Dexpression=project.artifactId)"
+
+"$MVNW" -DskipTests package
 
 JAR_PATH="$(ls -1 target/*.jar | grep -v 'original-' | head -n 1 || true)"
 if [[ -z "${JAR_PATH}" ]]; then

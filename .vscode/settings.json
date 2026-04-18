@@ -1,5 +1,11 @@
 {
     "editor.peekWidgetDefaultFocus": "tree",
     "editor.codeLens": false,
-    "editor.hover.sticky": false
+    "editor.hover.sticky": false,
+    "maven.terminal.favorites": [
+        {
+            "command": "mvn clean install -DskipTests",
+            "debug": false
+        }
+    ]
 }

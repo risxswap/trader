@@ -193,7 +193,7 @@ public class SystemTaskService {
         }
 
         traderTaskRefreshPublisher.publish(new TraderTaskRefreshMessage(
-                task.getAppName(),
+                task.getTaskType(),
                 task.getTaskCode(),
                 task.getVersion(),
                 eventType

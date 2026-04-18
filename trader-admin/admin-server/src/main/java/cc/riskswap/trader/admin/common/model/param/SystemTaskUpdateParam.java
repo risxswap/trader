@@ -11,6 +11,7 @@ public class SystemTaskUpdateParam {
     @NotBlank
     private String cron;
     private Boolean enabled;
+    @NotBlank
     private String status;
     private String paramsJson;
     private String remark;

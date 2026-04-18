@@ -55,5 +55,5 @@ docs/.obsidian
 
 ### Tools / Trae ###
 .tools/
-.worktrees
+.worktrees/
 dist
