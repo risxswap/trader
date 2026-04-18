@@ -16,7 +16,6 @@
   <description>trader-admin</description>
 
   <properties>
-    <java.version>21</java.version>
   </properties>
 
   <modules>
