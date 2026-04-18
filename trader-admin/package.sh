@@ -24,6 +24,8 @@ echo -e "${GREEN}开始打包 ${PACKAGE_NAME}...${NC}"
 MVN_CMD=""
 if [ -x "${ROOT_DIR}/mvnw" ]; then
     MVN_CMD="${ROOT_DIR}/mvnw"
+elif [ -x "${ROOT_DIR}/../mvnw" ]; then
+    MVN_CMD="${ROOT_DIR}/../mvnw"
 elif command -v mvn &> /dev/null; then
     MVN_CMD="mvn"
 else
