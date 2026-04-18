@@ -11,10 +11,10 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import cc.riskswap.trader.admin.common.enums.AdjTypeEnum;
-import cc.riskswap.trader.admin.dao.FundAdjDao;
-import cc.riskswap.trader.admin.dao.FundMarketDao;
-import cc.riskswap.trader.admin.dao.entity.FundAdj;
-import cc.riskswap.trader.admin.dao.entity.FundMarket;
+import cc.riskswap.trader.base.dao.FundAdjDao;
+import cc.riskswap.trader.base.dao.FundMarketDao;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
 import lombok.extern.slf4j.Slf4j;
 
 /**

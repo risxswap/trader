@@ -2,8 +2,8 @@ package cc.riskswap.trader.admin.test.service;
 
 import cc.riskswap.trader.admin.common.model.ErrorCode;
 import cc.riskswap.trader.admin.common.model.dto.MsgPushLogDto;
-import cc.riskswap.trader.admin.dao.MsgPushLogDao;
-import cc.riskswap.trader.admin.dao.entity.MsgPushLog;
+import cc.riskswap.trader.base.dao.MsgPushLogDao;
+import cc.riskswap.trader.base.dao.entity.MsgPushLog;
 import cc.riskswap.trader.admin.exception.Warning;
 import cc.riskswap.trader.admin.service.MsgPushLogService;
 import org.junit.jupiter.api.Assertions;

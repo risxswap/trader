@@ -39,7 +39,7 @@
 
 ### trader-base 迁出（回归各项目）
 
-从 `trader-base` 迁出到 `trader-admin/admin-server` 的 `cc.riskswap.trader.admin.dao`（以及对应子包）：
+从 `trader-base` 迁出到 `trader-admin/admin-server` 的 `cc.riskswap.trader.base.dao`（以及对应子包）：
 
 - 基础字典与市场数据：
   - `BrokerDao`
@@ -72,8 +72,8 @@
 
 ### admin-server 侧包名
 
-- 新增/使用 `cc.riskswap.trader.admin.dao.*` 承接迁入的 DAO/Entity/Mapper 等
-- 与现有 `mybatis-plus.type-aliases-package: cc.riskswap.trader.admin.dao.entity` 保持一致
+- 新增/使用 `cc.riskswap.trader.base.dao.*` 承接迁入的 DAO/Entity/Mapper 等
+- 与现有 `mybatis-plus.type-aliases-package: cc.riskswap.trader.base.dao.entity` 保持一致
 
 ### Mapper 扫描与数据源注解
 
@@ -86,7 +86,7 @@
 - 现状清点：先列出 `trader-base` 当前 `cc.riskswap.trader.base.dao/**` 的类清单，逐个归类到“保留”或“迁出”，避免漏迁/误删
 - 迁移文件：以“DAO + 依赖实体/Mapper/Query/Param/DTO”为单位搬迁，保持原类名不变，仅调整 package
 - 更新引用：
-  - `trader-admin` 中引用迁出的 DAO/Entity 等，改为 `cc.riskswap.trader.admin.dao.*`
+  - `trader-admin` 中引用迁出的 DAO/Entity 等，改为 `cc.riskswap.trader.base.dao.*`
   - 引用保留清单的类型，继续使用 `cc.riskswap.trader.base.dao.*`
 - 验证：
   - `trader-base` 单测通过
@@ -107,7 +107,7 @@
 
 `admin-server` 的 `mybatis-plus.type-aliases-package` 建议同时包含：
 
-- `cc.riskswap.trader.admin.dao.entity`
+- `cc.riskswap.trader.base.dao.entity`
 - `cc.riskswap.trader.base.dao.entity`（保留清单仍会被 admin 使用）
 
 ### Param/DTO 归属（避免同名与混用）
@@ -123,7 +123,7 @@
 ## 验收标准
 
 - `trader-base` 仅保留“监控/上报/任务” DAO（保留清单内），不再包含业务域 DAO（基金/投资/交易所/用户/升级/执行 SQL 等）
-- `trader-admin/admin-server` 不再依赖 `trader-base` 的业务域 DAO（对应 import 均已迁移到 `cc.riskswap.trader.admin.dao.*`）
+- `trader-admin/admin-server` 不再依赖 `trader-base` 的业务域 DAO（对应 import 均已迁移到 `cc.riskswap.trader.base.dao.*`）
 - 构建与测试：
   - `trader-base`：`mvn test` 通过
   - `trader-admin`：`mvn -pl admin-server test` 通过（或至少 `compile` 通过，视现有测试基线）

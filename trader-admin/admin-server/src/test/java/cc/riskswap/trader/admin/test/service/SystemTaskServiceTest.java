@@ -7,9 +7,9 @@ import cc.riskswap.trader.admin.common.model.param.SystemTaskInstanceDeleteParam
 import cc.riskswap.trader.admin.common.model.param.SystemTaskTriggerParam;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskUpdateParam;
 import cc.riskswap.trader.admin.common.model.query.SystemTaskListQuery;
-import cc.riskswap.trader.admin.dao.InvestmentDao;
-import cc.riskswap.trader.admin.dao.SystemTaskDao;
-import cc.riskswap.trader.admin.dao.entity.SystemTask;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.entity.SystemTask;
 import cc.riskswap.trader.admin.service.SystemTaskService;
 import cc.riskswap.trader.base.task.TraderTaskRefreshMessage;
 import cc.riskswap.trader.base.task.TraderTaskRefreshPublisher;

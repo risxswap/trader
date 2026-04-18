@@ -8,7 +8,7 @@ spring:
     active: dev
 
 mybatis-plus:
-  type-aliases-package: cc.riskswap.trader.admin.dao.entity
+  type-aliases-package: cc.riskswap.trader.base.dao.entity
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
@@ -58,7 +58,7 @@ trader:
     access-token: ${MATRIX_ACCESS_TOKEN:}
 # logging:
 #   level:
-#     cc.riskswap.trader.admin.dao.mapper: DEBUG
+#     cc.riskswap.trader.base.dao.mapper: DEBUG
 
 management:
   endpoints:

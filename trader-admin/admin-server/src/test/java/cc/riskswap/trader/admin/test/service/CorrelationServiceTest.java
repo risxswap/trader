@@ -2,8 +2,8 @@ package cc.riskswap.trader.admin.test.service;
 
 import cc.riskswap.trader.admin.common.model.param.CorrelationParam;
 import cc.riskswap.trader.admin.service.CorrelationService;
-import cc.riskswap.trader.admin.dao.CorrelationDao;
-import cc.riskswap.trader.admin.dao.entity.Correlation;
+import cc.riskswap.trader.base.dao.CorrelationDao;
+import cc.riskswap.trader.base.dao.entity.Correlation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

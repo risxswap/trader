@@ -1,9 +1,9 @@
 package cc.riskswap.trader.admin.test.service;
 
-import cc.riskswap.trader.admin.dao.ClickHouseSqlExecDao;
-import cc.riskswap.trader.admin.dao.SqlExecDao;
-import cc.riskswap.trader.admin.dao.SystemUpgradeStepDao;
-import cc.riskswap.trader.admin.dao.entity.SystemUpgradeStep;
+import cc.riskswap.trader.base.dao.ClickHouseSqlExecDao;
+import cc.riskswap.trader.base.dao.SqlExecDao;
+import cc.riskswap.trader.base.dao.SystemUpgradeStepDao;
+import cc.riskswap.trader.base.dao.entity.SystemUpgradeStep;
 import cc.riskswap.trader.admin.service.UpgradeService;
 import cc.riskswap.trader.admin.service.UpgradeSqlErrorDecider;
 import org.junit.jupiter.api.Assertions;

@@ -11,8 +11,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.InvestmentPositionDto;
 import cc.riskswap.trader.admin.common.model.query.InvestmentPositionListQuery;
-import cc.riskswap.trader.admin.dao.InvestmentPositionDao;
-import cc.riskswap.trader.admin.dao.entity.InvestmentPosition;
+import cc.riskswap.trader.base.dao.InvestmentPositionDao;
+import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -52,7 +52,7 @@ public class InvestmentPositionService {
     }
 
     public PageDto<InvestmentPositionDto> list(InvestmentPositionListQuery q) {
-        cc.riskswap.trader.admin.dao.query.InvestmentPositionListQuery listQuery = new cc.riskswap.trader.admin.dao.query.InvestmentPositionListQuery();
+        cc.riskswap.trader.base.dao.query.InvestmentPositionListQuery listQuery = new cc.riskswap.trader.base.dao.query.InvestmentPositionListQuery();
         BeanUtil.copyProperties(q, listQuery);
         Page<InvestmentPosition> p = investmentPositionDao.pageQuery(listQuery);
         

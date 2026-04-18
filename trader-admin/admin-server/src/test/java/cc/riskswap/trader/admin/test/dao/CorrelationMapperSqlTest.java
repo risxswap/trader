@@ -1,6 +1,6 @@
 package cc.riskswap.trader.admin.test.dao;
 
-import cc.riskswap.trader.admin.dao.mapper.CorrelationMapper;
+import cc.riskswap.trader.base.dao.mapper.CorrelationMapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -11,8 +11,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import cc.riskswap.trader.admin.common.model.dto.ExchangeDto;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.query.ExchangeListQuery;
-import cc.riskswap.trader.admin.dao.ExchangeDao;
-import cc.riskswap.trader.admin.dao.entity.Exchange;
+import cc.riskswap.trader.base.dao.ExchangeDao;
+import cc.riskswap.trader.base.dao.entity.Exchange;
 import cn.hutool.core.bean.BeanUtil;
 
 @Service
@@ -22,7 +22,7 @@ public class ExchangeService {
     private ExchangeDao exchangeDao;
 
     public PageDto<ExchangeDto> list(ExchangeListQuery q) {
-        cc.riskswap.trader.admin.dao.query.ExchangeListQuery listQuery = new cc.riskswap.trader.admin.dao.query.ExchangeListQuery();
+        cc.riskswap.trader.base.dao.query.ExchangeListQuery listQuery = new cc.riskswap.trader.base.dao.query.ExchangeListQuery();
         BeanUtil.copyProperties(q, listQuery);
         Page<Exchange> page = exchangeDao.pageQuery(listQuery);
         List<ExchangeDto> list = page.getRecords().stream()

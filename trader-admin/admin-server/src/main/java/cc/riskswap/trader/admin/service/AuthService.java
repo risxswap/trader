@@ -2,8 +2,8 @@ package cc.riskswap.trader.admin.service;
 
 import cc.riskswap.trader.admin.common.model.dto.LoginDto;
 import cc.riskswap.trader.admin.common.model.param.LoginParam;
-import cc.riskswap.trader.admin.dao.UserDao;
-import cc.riskswap.trader.admin.dao.entity.User;
+import cc.riskswap.trader.base.dao.UserDao;
+import cc.riskswap.trader.base.dao.entity.User;
 
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;

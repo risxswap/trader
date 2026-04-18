@@ -75,7 +75,7 @@ rm -rf /Users/haiming/Workspace/trader/trader-executor/src/main/java/cc/riskswap
 ### Task 6: Update Imports in Consuming Projects
 
 - [ ] **Step 1: Update trader-admin**
-Find and replace all `cc.riskswap.trader.admin.dao` imports with `cc.riskswap.trader.base.dao` in `trader-admin`.
+Find and replace all `cc.riskswap.trader.base.dao` imports with `cc.riskswap.trader.base.dao` in `trader-admin`.
 Find and replace `cc.riskswap.trader.admin.common.model.query.FundListQuery` with `cc.riskswap.trader.base.dao.query.FundListQuery`.
 
 - [ ] **Step 2: Update trader-collector**

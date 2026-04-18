@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import cc.riskswap.trader.admin.common.model.ResData;
 import cc.riskswap.trader.admin.common.model.dto.StrategyInfoDto;
 import cc.riskswap.trader.admin.common.model.dto.StrategiesDto;
-import cc.riskswap.trader.admin.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.admin.service.FundService;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;

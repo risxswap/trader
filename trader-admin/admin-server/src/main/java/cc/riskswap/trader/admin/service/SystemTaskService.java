@@ -10,10 +10,10 @@ import cc.riskswap.trader.admin.common.model.param.SystemTaskTriggerParam;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskUpdateParam;
 import cc.riskswap.trader.admin.common.model.query.SystemTaskListQuery;
 import cc.riskswap.trader.admin.common.model.query.TaskDefinitionListQuery;
-import cc.riskswap.trader.admin.dao.InvestmentDao;
-import cc.riskswap.trader.admin.dao.SystemTaskDao;
-import cc.riskswap.trader.admin.dao.entity.Investment;
-import cc.riskswap.trader.admin.dao.entity.SystemTask;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
+import cc.riskswap.trader.base.dao.entity.SystemTask;
 import cc.riskswap.trader.admin.exception.Warning;
 import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
 import cc.riskswap.trader.base.task.TraderTaskRefreshMessage;
@@ -41,8 +41,8 @@ public class SystemTaskService {
     private final InvestmentDao investmentDao;
 
     public PageDto<SystemTaskDto> list(SystemTaskListQuery query) {
-        cc.riskswap.trader.admin.dao.query.SystemTaskListQuery listQuery =
-                BeanUtil.copyProperties(query, cc.riskswap.trader.admin.dao.query.SystemTaskListQuery.class);
+        cc.riskswap.trader.base.dao.query.SystemTaskListQuery listQuery =
+                BeanUtil.copyProperties(query, cc.riskswap.trader.base.dao.query.SystemTaskListQuery.class);
         Page<SystemTask> page = systemTaskDao.pageQuery(listQuery);
 
         PageDto<SystemTaskDto> result = new PageDto<>();
@@ -58,7 +58,7 @@ public class SystemTaskService {
                 .collect(Collectors.toList());
 
         if (Boolean.TRUE.equals(query.getIncludeInvestment())) {
-            cc.riskswap.trader.admin.dao.query.InvestmentListQuery invQuery = new cc.riskswap.trader.admin.dao.query.InvestmentListQuery();
+            cc.riskswap.trader.base.dao.query.InvestmentListQuery invQuery = new cc.riskswap.trader.base.dao.query.InvestmentListQuery();
             invQuery.setPageNo(1);
             invQuery.setPageSize(100);
             if (StrUtil.isNotBlank(query.getTaskName())) {

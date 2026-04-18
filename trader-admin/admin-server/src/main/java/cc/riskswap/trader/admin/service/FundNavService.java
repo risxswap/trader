@@ -16,10 +16,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import cc.riskswap.trader.admin.common.model.dto.FundNavDto;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.query.FundNavListQuery;
-import cc.riskswap.trader.admin.dao.FundAdjDao;
-import cc.riskswap.trader.admin.dao.FundNavDao;
-import cc.riskswap.trader.admin.dao.entity.FundAdj;
-import cc.riskswap.trader.admin.dao.entity.FundNav;
+import cc.riskswap.trader.base.dao.FundAdjDao;
+import cc.riskswap.trader.base.dao.FundNavDao;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
+import cc.riskswap.trader.base.dao.entity.FundNav;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +35,7 @@ public class FundNavService {
 
     @SuppressWarnings("null")
     public PageDto<FundNavDto> listNav(FundNavListQuery q) {
-        cc.riskswap.trader.admin.dao.query.FundNavListQuery listQuery = new cc.riskswap.trader.admin.dao.query.FundNavListQuery();
+        cc.riskswap.trader.base.dao.query.FundNavListQuery listQuery = new cc.riskswap.trader.base.dao.query.FundNavListQuery();
         BeanUtils.copyProperties(q, listQuery);
         Page<FundNav> page = fundNavDao.pageQuery(listQuery);
         

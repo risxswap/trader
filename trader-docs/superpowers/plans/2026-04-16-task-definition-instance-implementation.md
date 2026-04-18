@@ -1308,7 +1308,7 @@ public class SystemTaskTriggerParam {
 
 Update `SystemTaskService.java`：
 
-- 构造器注入 `StringRedisTemplate`（用于扫描 definition）与 `cc.riskswap.trader.admin.dao.InvestmentDao`（用于 includeInvestment 聚合）
+- 构造器注入 `StringRedisTemplate`（用于扫描 definition）与 `cc.riskswap.trader.base.dao.InvestmentDao`（用于 includeInvestment 聚合）
 - `list(query)`：查询 `system_task`（按 taskType 过滤），若 `includeInvestment=true` 则额外把投资列表映射成 `SystemTaskDto` 并 append
 - `definitions(query)`：SCAN `trader:task:def:*`，读取 JSON 解析成 `TaskDefinitionDto`，按过滤条件返回
 - `createInstance(param)`：读取 `trader:task:def:{taskType}:{taskCode}` 定义 JSON；生成 `SystemTask` 插入；冲突则抛 Warning；publish refresh `TASK_CREATED`

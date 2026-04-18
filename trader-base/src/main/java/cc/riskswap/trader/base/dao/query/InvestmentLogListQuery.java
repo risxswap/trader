@@ -1,0 +1,11 @@
+package cc.riskswap.trader.base.dao.query;
+
+import lombok.Data;
+
+@Data
+public class InvestmentLogListQuery {
+    private Integer pageNo = 1;
+    private Integer pageSize = 20;
+    private Integer investmentId;
+    private String type;
+}

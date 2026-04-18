@@ -29,12 +29,12 @@ import cc.riskswap.trader.admin.common.model.query.FundAdjQuery;
 import cc.riskswap.trader.admin.common.model.query.FundListQuery;
 import cc.riskswap.trader.admin.common.model.query.FundMarketListQuery;
 import cc.riskswap.trader.admin.common.model.query.FundMarketQuery;
-import cc.riskswap.trader.admin.dao.FundAdjDao;
-import cc.riskswap.trader.admin.dao.FundDao;
-import cc.riskswap.trader.admin.dao.FundMarketDao;
-import cc.riskswap.trader.admin.dao.entity.Fund;
-import cc.riskswap.trader.admin.dao.entity.FundMarket;
-import cc.riskswap.trader.admin.dao.entity.FundAdj;
+import cc.riskswap.trader.base.dao.FundAdjDao;
+import cc.riskswap.trader.base.dao.FundDao;
+import cc.riskswap.trader.base.dao.FundMarketDao;
+import cc.riskswap.trader.base.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -124,7 +124,7 @@ public class FundService {
      * 分页查询基金列表（包含搜索与排序）并填充最新更新时间
      */
     public PageDto<FundDto> listFunds(FundListQuery q) {
-        cc.riskswap.trader.admin.dao.query.FundListQuery fundListQuery = new cc.riskswap.trader.admin.dao.query.FundListQuery();
+        cc.riskswap.trader.base.dao.query.FundListQuery fundListQuery = new cc.riskswap.trader.base.dao.query.FundListQuery();
         org.springframework.beans.BeanUtils.copyProperties(q, fundListQuery);
         Page<Fund> r = fundDao.pageQuery(fundListQuery);
         List<FundDto> items = r.getRecords().stream().map(f -> {
@@ -254,7 +254,7 @@ public class FundService {
      * 分页查询行情列表（代码和日期为空时返回所有数据）
      */
     public PageDto<FundMarketDto> listFundMarkets(FundMarketListQuery q) {
-        cc.riskswap.trader.admin.dao.query.FundMarketListQuery listQuery = new cc.riskswap.trader.admin.dao.query.FundMarketListQuery();
+        cc.riskswap.trader.base.dao.query.FundMarketListQuery listQuery = new cc.riskswap.trader.base.dao.query.FundMarketListQuery();
         org.springframework.beans.BeanUtils.copyProperties(q, listQuery);
         Page<FundMarket> r = fundMarketDao.pageQuery(listQuery);
         List<FundMarketDto> items = r.getRecords().stream().map(m -> {
@@ -282,7 +282,7 @@ public class FundService {
      * 分页查询复权因子（代码和日期为空时返回所有数据）
      */
     public PageDto<FundAdjDto> listFundAdjs(FundAdjListQuery q) {
-        cc.riskswap.trader.admin.dao.query.FundAdjListQuery listQuery = new cc.riskswap.trader.admin.dao.query.FundAdjListQuery();
+        cc.riskswap.trader.base.dao.query.FundAdjListQuery listQuery = new cc.riskswap.trader.base.dao.query.FundAdjListQuery();
         org.springframework.beans.BeanUtils.copyProperties(q, listQuery);
         Page<FundAdj> r = fundAdjDao.pageQuery(listQuery);
         List<FundAdjDto> items = r.getRecords().stream().map(a -> {

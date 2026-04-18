@@ -4,8 +4,8 @@ import cc.riskswap.trader.admin.common.model.dto.CorrelationDto;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.param.CorrelationParam;
 import cc.riskswap.trader.admin.common.model.query.CorrelationQuery;
-import cc.riskswap.trader.admin.dao.CorrelationDao;
-import cc.riskswap.trader.admin.dao.entity.Correlation;
+import cc.riskswap.trader.base.dao.CorrelationDao;
+import cc.riskswap.trader.base.dao.entity.Correlation;
 import cc.riskswap.trader.admin.common.model.ErrorCode;
 import cc.riskswap.trader.admin.exception.Warning;
 import cn.hutool.core.bean.BeanUtil;
@@ -29,7 +29,7 @@ public class CorrelationService {
     private CorrelationDao correlationDao;
 
     public PageDto<CorrelationDto> list(CorrelationQuery query) {
-        cc.riskswap.trader.admin.dao.query.CorrelationListQuery listQuery = BeanUtil.copyProperties(query, cc.riskswap.trader.admin.dao.query.CorrelationListQuery.class);
+        cc.riskswap.trader.base.dao.query.CorrelationListQuery listQuery = BeanUtil.copyProperties(query, cc.riskswap.trader.base.dao.query.CorrelationListQuery.class);
         Page<Correlation> page = correlationDao.pageQuery(listQuery);
 
         PageDto<CorrelationDto> result = new PageDto<>();

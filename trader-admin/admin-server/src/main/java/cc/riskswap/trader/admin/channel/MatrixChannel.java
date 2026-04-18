@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import cc.riskswap.trader.admin.dao.MsgPushLogDao;
-import cc.riskswap.trader.admin.dao.entity.MsgPushLog;
+import cc.riskswap.trader.base.dao.MsgPushLogDao;
+import cc.riskswap.trader.base.dao.entity.MsgPushLog;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;

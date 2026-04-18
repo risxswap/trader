@@ -75,7 +75,7 @@ public class NodeMetricsHistoryDto {
 
 - [ ] **Step 4: Create NodeMetricsLog Entity**
 ```java
-package cc.riskswap.trader.admin.dao.entity;
+package cc.riskswap.trader.base.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -121,8 +121,8 @@ package cc.riskswap.trader.admin.service;
 
 import cc.riskswap.trader.admin.common.model.dto.NodeMetricsHistoryDto;
 import cc.riskswap.trader.admin.common.model.dto.NodeStatusDto;
-import cc.riskswap.trader.admin.dao.NodeMetricsLogDao;
-import cc.riskswap.trader.admin.dao.entity.NodeMetricsLog;
+import cc.riskswap.trader.base.dao.NodeMetricsLogDao;
+import cc.riskswap.trader.base.dao.entity.NodeMetricsLog;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;

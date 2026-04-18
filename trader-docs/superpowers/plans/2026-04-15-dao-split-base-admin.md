@@ -4,7 +4,7 @@
 
 **Goal:** Keep only monitoring/reporting/task DAOs in `trader-base`, and move all other DAOs used by `trader-admin/admin-server` back into `admin-server` so each project owns its business DAOs.
 
-**Architecture:** Retain cross-service “monitoring & reporting” tables (Node*, SystemTask*, TaskLog, MsgPushLog) in `trader-base`. Introduce `cc.riskswap.trader.admin.dao.*` in admin-server for business DAOs. Ensure Mapper scanning in admin includes both `admin` and `base` mapper packages.
+**Architecture:** Retain cross-service “monitoring & reporting” tables (Node*, SystemTask*, TaskLog, MsgPushLog) in `trader-base`. Introduce `cc.riskswap.trader.base.dao.*` in admin-server for business DAOs. Ensure Mapper scanning in admin includes both `admin` and `base` mapper packages.
 
 **Tech Stack:** Java, Spring Boot, MyBatis-Plus
 
@@ -48,7 +48,7 @@ Keep:
 Requirements:
 - Define beans with the same names as `trader-base` auto-config (`mysqlMapperScannerConfigurer`, `clickHouseMapperScannerConfigurer`) so they override `@ConditionalOnMissingBean`.
 - Set base package to include both:
-  - `cc.riskswap.trader.admin.dao.mapper`
+  - `cc.riskswap.trader.base.dao.mapper`
   - `cc.riskswap.trader.base.dao.mapper`
 - Keep annotation filtering:
   - `setAnnotationClass(MysqlMapper.class)` and `setAnnotationClass(ClickHouseMapper.class)`
@@ -59,7 +59,7 @@ Update:
 
 ```yaml
 mybatis-plus:
-  type-aliases-package: cc.riskswap.trader.admin.dao.entity,cc.riskswap.trader.base.dao.entity
+  type-aliases-package: cc.riskswap.trader.base.dao.entity,cc.riskswap.trader.base.dao.entity
 ```
 
 - [ ] **Step 3: Compile admin-server**
@@ -95,13 +95,13 @@ Move targets (non-keep):
 
 Change:
 
-- `package cc.riskswap.trader.base.dao...` → `package cc.riskswap.trader.admin.dao...`
+- `package cc.riskswap.trader.base.dao...` → `package cc.riskswap.trader.base.dao...`
 - Update imports for moved entities/mappers/queries/params accordingly.
 - Keep `MysqlMapper/ClickHouseMapper` annotations imported from `trader-base`.
 
 - [ ] **Step 3: Update admin-server services imports**
 
-Update references from `cc.riskswap.trader.base.dao.*` to `cc.riskswap.trader.admin.dao.*` for moved classes.
+Update references from `cc.riskswap.trader.base.dao.*` to `cc.riskswap.trader.base.dao.*` for moved classes.
 
 - [ ] **Step 4: Compile admin-server**
 

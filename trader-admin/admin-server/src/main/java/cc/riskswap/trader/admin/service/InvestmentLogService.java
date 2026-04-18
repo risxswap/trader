@@ -5,15 +5,15 @@ import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.param.InvestmentLogParam;
 import cc.riskswap.trader.admin.common.model.query.InvestmentLogQuery;
 import cc.riskswap.trader.admin.common.enums.InvestmentLogTypeEnum;
-import cc.riskswap.trader.admin.dao.InvestmentLogDao;
-import cc.riskswap.trader.admin.dao.entity.InvestmentLog;
+import cc.riskswap.trader.base.dao.InvestmentLogDao;
+import cc.riskswap.trader.base.dao.entity.InvestmentLog;
 import cc.riskswap.trader.admin.channel.WeComChannel;
-import cc.riskswap.trader.admin.dao.InvestmentDao;
-import cc.riskswap.trader.admin.dao.InvestmentPositionDao;
-import cc.riskswap.trader.admin.dao.InvestmentTradingDao;
-import cc.riskswap.trader.admin.dao.entity.Investment;
-import cc.riskswap.trader.admin.dao.entity.InvestmentPosition;
-import cc.riskswap.trader.admin.dao.entity.InvestmentTrading;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.InvestmentPositionDao;
+import cc.riskswap.trader.base.dao.InvestmentTradingDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
+import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
+import cc.riskswap.trader.base.dao.entity.InvestmentTrading;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -50,7 +50,7 @@ public class InvestmentLogService {
     private WeComChannel weComChannel;
 
     public PageDto<InvestmentLogDto> list(InvestmentLogQuery query) {
-        cc.riskswap.trader.admin.dao.query.InvestmentLogListQuery listQuery = new cc.riskswap.trader.admin.dao.query.InvestmentLogListQuery();
+        cc.riskswap.trader.base.dao.query.InvestmentLogListQuery listQuery = new cc.riskswap.trader.base.dao.query.InvestmentLogListQuery();
         BeanUtil.copyProperties(query, listQuery);
         Page<InvestmentLog> page = investmentLogDao.pageQuery(listQuery);
 

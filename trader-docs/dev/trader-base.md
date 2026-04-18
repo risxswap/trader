@@ -256,9 +256,9 @@ public interface OrderSnapshotMapper extends BaseMapper<OrderSnapshotEntity> {
 }
 ```
 
-### 业务项目包路径示例（`cc.riskswap.trader.admin.dao.mapper`）
+### 业务项目包路径示例（`cc.riskswap.trader.base.dao.mapper`）
 
-如果业务项目 Mapper 包是 `cc.riskswap.trader.admin.dao.mapper`，推荐把启动类放在 `cc.riskswap.trader.admin`，这样默认扫描即可覆盖该包。
+如果业务项目 Mapper 包是 `cc.riskswap.trader.base.dao.mapper`，推荐把启动类放在 `cc.riskswap.trader.admin`，这样默认扫描即可覆盖该包。
 
 启动类示例：
 
@@ -280,7 +280,7 @@ public class AdminApplication {
 Mapper 示例：
 
 ```java
-package cc.riskswap.trader.admin.dao.mapper;
+package cc.riskswap.trader.base.dao.mapper;
 
 import cc.riskswap.trader.base.datasource.annotation.MysqlMapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -291,7 +291,7 @@ public interface AdminUserMapper extends BaseMapper<AdminUserEntity> {
 ```
 
 ```java
-package cc.riskswap.trader.admin.dao.mapper;
+package cc.riskswap.trader.base.dao.mapper;
 
 import cc.riskswap.trader.base.datasource.annotation.ClickHouseMapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -318,7 +318,7 @@ public class TraderMapperScanConfig {
     @Bean(name = "mysqlMapperScannerConfigurer")
     public AutoConfiguredMapperScannerConfigurer mysqlMapperScannerConfigurer() {
         AutoConfiguredMapperScannerConfigurer configurer = new AutoConfiguredMapperScannerConfigurer();
-        configurer.setBasePackage("cc.riskswap.trader.admin.dao.mapper");
+        configurer.setBasePackage("cc.riskswap.trader.base.dao.mapper");
         configurer.setAnnotationClass(MysqlMapper.class);
         configurer.setSqlSessionTemplateBeanName("mysqlSqlSessionTemplate");
         configurer.setProcessPropertyPlaceHolders(true);
@@ -328,7 +328,7 @@ public class TraderMapperScanConfig {
     @Bean(name = "clickHouseMapperScannerConfigurer")
     public AutoConfiguredMapperScannerConfigurer clickHouseMapperScannerConfigurer() {
         AutoConfiguredMapperScannerConfigurer configurer = new AutoConfiguredMapperScannerConfigurer();
-        configurer.setBasePackage("cc.riskswap.trader.admin.dao.mapper");
+        configurer.setBasePackage("cc.riskswap.trader.base.dao.mapper");
         configurer.setAnnotationClass(ClickHouseMapper.class);
         configurer.setSqlSessionTemplateBeanName("clickHouseSqlSessionTemplate");
         configurer.setProcessPropertyPlaceHolders(true);

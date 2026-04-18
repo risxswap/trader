@@ -3,8 +3,8 @@ package cc.riskswap.trader.admin.service;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.TaskLogDto;
 import cc.riskswap.trader.admin.common.model.query.TaskLogQuery;
-import cc.riskswap.trader.admin.dao.TaskLogDao;
-import cc.riskswap.trader.admin.dao.entity.TaskLog;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.dao.entity.TaskLog;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -23,7 +23,7 @@ public class TaskLogService {
     private final TaskLogDao taskLogDao;
 
     public PageDto<TaskLogDto> list(TaskLogQuery query) {
-        cc.riskswap.trader.admin.dao.query.TaskLogListQuery listQuery = new cc.riskswap.trader.admin.dao.query.TaskLogListQuery();
+        cc.riskswap.trader.base.dao.query.TaskLogListQuery listQuery = new cc.riskswap.trader.base.dao.query.TaskLogListQuery();
         BeanUtil.copyProperties(query, listQuery);
         Page<TaskLog> page = taskLogDao.pageQuery(listQuery);
 

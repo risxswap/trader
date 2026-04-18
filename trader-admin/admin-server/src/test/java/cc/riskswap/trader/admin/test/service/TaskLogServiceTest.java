@@ -3,8 +3,8 @@ package cc.riskswap.trader.admin.test.service;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.TaskLogDto;
 import cc.riskswap.trader.admin.common.model.query.TaskLogQuery;
-import cc.riskswap.trader.admin.dao.TaskLogDao;
-import cc.riskswap.trader.admin.dao.entity.TaskLog;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.dao.entity.TaskLog;
 import cc.riskswap.trader.admin.service.TaskLogService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.Assertions;
@@ -44,10 +44,10 @@ class TaskLogServiceTest {
 
         PageDto<TaskLogDto> result = taskLogService.list(query);
 
-        ArgumentCaptor<cc.riskswap.trader.admin.dao.query.TaskLogListQuery> captor =
-                ArgumentCaptor.forClass(cc.riskswap.trader.admin.dao.query.TaskLogListQuery.class);
+        ArgumentCaptor<cc.riskswap.trader.base.dao.query.TaskLogListQuery> captor =
+                ArgumentCaptor.forClass(cc.riskswap.trader.base.dao.query.TaskLogListQuery.class);
         Mockito.verify(taskLogDao).pageQuery(captor.capture());
-        cc.riskswap.trader.admin.dao.query.TaskLogListQuery actualQuery = captor.getValue();
+        cc.riskswap.trader.base.dao.query.TaskLogListQuery actualQuery = captor.getValue();
         Assertions.assertEquals("fundSync", actualQuery.getTaskCode());
         Assertions.assertEquals("同步基金", actualQuery.getTaskName());
         Assertions.assertEquals(1, result.getItems().size());

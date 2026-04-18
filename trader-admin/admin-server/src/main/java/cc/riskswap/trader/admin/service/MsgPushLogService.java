@@ -12,8 +12,8 @@ import cc.riskswap.trader.admin.common.model.dto.MsgPushLogDto;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.param.MsgPushParam;
 import cc.riskswap.trader.admin.common.model.query.MsgPushLogQuery;
-import cc.riskswap.trader.admin.dao.MsgPushLogDao;
-import cc.riskswap.trader.admin.dao.entity.MsgPushLog;
+import cc.riskswap.trader.base.dao.MsgPushLogDao;
+import cc.riskswap.trader.base.dao.entity.MsgPushLog;
 import cc.riskswap.trader.admin.exception.Warning;
 import jakarta.annotation.Resource;
 import cn.hutool.core.bean.BeanUtil;
@@ -34,7 +34,7 @@ public class MsgPushLogService {
     private MatrixChannel matrixChannel;
 
     public PageDto<MsgPushLogDto> list(MsgPushLogQuery query) {
-        cc.riskswap.trader.admin.dao.query.MsgPushLogListQuery listQuery = new cc.riskswap.trader.admin.dao.query.MsgPushLogListQuery();
+        cc.riskswap.trader.base.dao.query.MsgPushLogListQuery listQuery = new cc.riskswap.trader.base.dao.query.MsgPushLogListQuery();
         BeanUtil.copyProperties(query, listQuery);
         Page<MsgPushLog> page = msgPushLogDao.pageQuery(listQuery);
 

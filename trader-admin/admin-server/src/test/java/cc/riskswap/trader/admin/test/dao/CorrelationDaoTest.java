@@ -1,9 +1,9 @@
 package cc.riskswap.trader.admin.test.dao;
 
-import cc.riskswap.trader.admin.dao.CorrelationDao;
-import cc.riskswap.trader.admin.dao.entity.Correlation;
-import cc.riskswap.trader.admin.dao.mapper.CorrelationMapper;
-import cc.riskswap.trader.admin.dao.query.CorrelationListQuery;
+import cc.riskswap.trader.base.dao.CorrelationDao;
+import cc.riskswap.trader.base.dao.entity.Correlation;
+import cc.riskswap.trader.base.dao.mapper.CorrelationMapper;
+import cc.riskswap.trader.base.dao.query.CorrelationListQuery;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

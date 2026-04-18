@@ -26,7 +26,7 @@
 基于 Java Spring Boot 和 MyBatis-Plus。
 
 ### 3.1 实体与映射
-*   **Entity:** `cc.riskswap.trader.admin.dao.entity.TaskLog`
+*   **Entity:** `cc.riskswap.trader.base.dao.entity.TaskLog`
 *   **Mapper:** `TaskLogMapper`
 *   **Dao:** `TaskLogDao` (继承 `ServiceImpl<TaskLogMapper, TaskLog>`)
 

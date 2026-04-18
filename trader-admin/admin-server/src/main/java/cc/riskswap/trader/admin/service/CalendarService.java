@@ -19,8 +19,8 @@ import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.ResultSetDto;
 import cc.riskswap.trader.admin.common.model.query.CalendarListQuery;
 import cc.riskswap.trader.admin.common.util.DateUtil;
-import cc.riskswap.trader.admin.dao.CalendarDao;
-import cc.riskswap.trader.admin.dao.entity.Calendar;
+import cc.riskswap.trader.base.dao.CalendarDao;
+import cc.riskswap.trader.base.dao.entity.Calendar;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -31,7 +31,7 @@ public class CalendarService {
     private CalendarDao calendarDao;
 
     public PageDto<CalendarDto> list(CalendarListQuery q) {
-        cc.riskswap.trader.admin.dao.query.CalendarListQuery listQuery = new cc.riskswap.trader.admin.dao.query.CalendarListQuery();
+        cc.riskswap.trader.base.dao.query.CalendarListQuery listQuery = new cc.riskswap.trader.base.dao.query.CalendarListQuery();
         BeanUtil.copyProperties(q, listQuery);
         Page<Calendar> p = calendarDao.pageQuery(listQuery);
         List<CalendarDto> list = p.getRecords().stream()

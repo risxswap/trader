@@ -4,10 +4,10 @@ import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.InvestmentDto;
 import cc.riskswap.trader.admin.common.model.param.InvestmentParam;
 import cc.riskswap.trader.admin.common.model.query.InvestmentQuery;
-import cc.riskswap.trader.admin.dao.InvestmentLogDao;
-import cc.riskswap.trader.admin.dao.InvestmentDao;
-import cc.riskswap.trader.admin.dao.entity.Investment;
-import cc.riskswap.trader.admin.dao.entity.InvestmentLog;
+import cc.riskswap.trader.base.dao.InvestmentLogDao;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
+import cc.riskswap.trader.base.dao.entity.InvestmentLog;
 import cc.riskswap.trader.admin.pubsub.publisher.InvestmentPublisher;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
@@ -76,7 +76,7 @@ public class InvestmentService {
     }
 
     public PageDto<InvestmentDto> list(InvestmentQuery query) {
-        cc.riskswap.trader.admin.dao.query.InvestmentListQuery listQuery = new cc.riskswap.trader.admin.dao.query.InvestmentListQuery();
+        cc.riskswap.trader.base.dao.query.InvestmentListQuery listQuery = new cc.riskswap.trader.base.dao.query.InvestmentListQuery();
         BeanUtil.copyProperties(query, listQuery);
         Page<Investment> page = investmentDao.pageQuery(listQuery);
 

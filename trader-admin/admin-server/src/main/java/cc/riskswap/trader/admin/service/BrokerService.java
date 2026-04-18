@@ -4,8 +4,8 @@ import cc.riskswap.trader.admin.common.model.dto.BrokerDto;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.param.BrokerParam;
 import cc.riskswap.trader.admin.common.model.query.BrokerListQuery;
-import cc.riskswap.trader.admin.dao.BrokerDao;
-import cc.riskswap.trader.admin.dao.entity.Broker;
+import cc.riskswap.trader.base.dao.BrokerDao;
+import cc.riskswap.trader.base.dao.entity.Broker;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class BrokerService {
     private BrokerDao brokerDao;
 
     public PageDto<BrokerDto> list(BrokerListQuery q) {
-        cc.riskswap.trader.admin.dao.query.BrokerListQuery listQuery = new cc.riskswap.trader.admin.dao.query.BrokerListQuery();
+        cc.riskswap.trader.base.dao.query.BrokerListQuery listQuery = new cc.riskswap.trader.base.dao.query.BrokerListQuery();
         BeanUtil.copyProperties(q, listQuery);
         Page<Broker> page = brokerDao.pageQuery(listQuery);
         List<BrokerDto> list = page.getRecords().stream()

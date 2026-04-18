@@ -1,8 +1,8 @@
 package cc.riskswap.trader.admin.service;
 
 import cc.riskswap.trader.admin.common.model.param.ChangePasswordParam;
-import cc.riskswap.trader.admin.dao.UserDao;
-import cc.riskswap.trader.admin.dao.entity.User;
+import cc.riskswap.trader.base.dao.UserDao;
+import cc.riskswap.trader.base.dao.entity.User;
 import jakarta.annotation.Resource;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
