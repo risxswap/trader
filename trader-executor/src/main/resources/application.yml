@@ -1,0 +1,46 @@
+server:
+  port: 8090
+spring:
+  application:
+    name: trader-executor
+  quartz:
+    job-store-type: memory
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: StrategyScheduler
+            instanceId: AUTO
+
+trader:
+  redis:
+    enabled: true
+    host: localhost
+    port: 6379
+    password: hy123!!!
+    database: 0
+  mysql:
+    enabled: true
+    url: jdbc:mysql://localhost:3306/trader?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  clickhouse:
+    enabled: true
+    url: jdbc:clickhouse://localhost:8123/trader
+    username: default
+    password: default
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+  task-log:
+    enabled: true
+  monitor:
+    enabled: true
+    interval: ${TRADER_MONITOR_INTERVAL:PT30S}
+    log-on-publish: ${TRADER_MONITOR_LOG_ON_PUBLISH:true}
+  node:
+    id: ${TRADER_NODE_ID:${HOSTNAME:trader-collector}}
+    type: STRATEGY
+admin:
+  api:
+    base-url: http://localhost:8080

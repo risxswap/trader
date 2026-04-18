@@ -1,0 +1,8 @@
+- [x] **Step 1: 扩展路由测试（先失败）**
+- [x] **Step 2: 增加 DTO/Query/Param**
+- [x] **Step 3: 扩展 SystemTaskDto / Query / UpdateParam 支持 taskType**
+- [x] **Step 4: 在 Service 中实现 definition list / create / delete / list 聚合**
+- [x] **Step 5: Controller 增加 3 个新路由**
+- [x] **Step 6: 更新 Service 单测覆盖 create/delete 与消息字段**
+- [x] **Step 7: 跑 admin-server 单测 + 编译**
+- [x] **Step 8: Commit**

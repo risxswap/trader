@@ -1,0 +1,2 @@
+ALTER TABLE system_task
+    ADD COLUMN enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否启用' AFTER cron;

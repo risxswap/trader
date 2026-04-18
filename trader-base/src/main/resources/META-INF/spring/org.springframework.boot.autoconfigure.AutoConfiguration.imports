@@ -1,0 +1,2 @@
+cc.riskswap.trader.base.autoconfigure.TraderBaseAutoConfiguration
+cc.riskswap.trader.base.autoconfigure.TraderTaskAutoConfiguration

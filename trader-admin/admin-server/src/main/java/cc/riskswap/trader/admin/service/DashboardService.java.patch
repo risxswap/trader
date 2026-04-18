@@ -1,0 +1,47 @@
+--- /Users/ming/Workspace/trader/trader-admin/admin-server/src/main/java/cc/riskswap/trader/admin/service/DashboardService.java
++++ /Users/ming/Workspace/trader/trader-admin/admin-server/src/main/java/cc/riskswap/trader/admin/service/DashboardService.java
+@@ -4,6 +4,7 @@
+ import cc.riskswap.trader.admin.common.model.dto.ChartDataDto;
+ import cc.riskswap.trader.admin.common.model.dto.DashboardDto;
++import cc.riskswap.trader.admin.common.model.dto.SystemStatusDto;
+ import cc.riskswap.trader.admin.dao.BrokerDao;
+ import cc.riskswap.trader.admin.dao.InvestmentDao;
+ import cc.riskswap.trader.admin.dao.InvestmentLogDao;
+@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.beans.factory.annotation.Qualifier;
++import org.springframework.data.redis.core.StringRe--- /Users/ming/Workspace/trader/trader-admin/admin-server/src/main/java/cc/riskswap/trader/admin/service/DashboardService.java
++++ /Users/ming/Workspace/trader/tradeh.+++ /Users/ming/Workspace/trader/trader-admin/admin-server/src/main/java/cc/riskswap/trader/admin/service/DashboardService.jav+3@@ -4,6 +4,7 @@
+ import cc.riskswap.trader.admin.common.model.dto.ChartDataDto;
+ import cc.riskswap.trader.admin.common.model.;
+ import cc.risre import cc.riskswap.trader.admin.common.model.dto.DashboardDtoys+import cc.riskswap.trader.admin.common.model.dto.SystemStatusie import cc.riskswap.trader.admin.dao.BrokerDao;
+ import cc.riskswou import cc.riskswap.trader.admin.dao.Investmen{
+ import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j; = import lombok.ex
+ +import org.springframework.beansBi+import org.springframework.beans.factory.annotation.QualifierRO+import org.springframework.data.redis.core.StringRe--- /Users  +++ /Users/ming/Workspace/trader/tradeh.+++ /Users/ming/Workspace/trader/trader-admin/admin-server/src/main/java/cc/riskswap/trader/admin/service/DashboardService.jav+3@@ -4,6 +4.g import cc.riskswap.trader.admin.common.model.dto.ChartDataDto;
+ import cc.riskswap.trader.admin.common.model.;
+ import cc.risre import cc.riskswap.trader.admin.common.model.dto.Dash   import cc.riskswap.trader.admin.common.model.;
+ import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cc.riskswou import cc.riskswap.trader.admin.dao.Investmen{
+ import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j; = import lombok.e(i import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,   import lombok.extern.slf4j.Slf4j; = import lombok.ex
+ +import org.speC +import org.springframework.beansBi+import org.sprieh import cc.riskswap.trader.admin.common.model.;
+ import cc.risre import cc.riskswap.trader.admin.common.model.dto.Dash   import cc.riskswap.trader.admin.common.model.;
+ import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cc.riskswou import cc.riskswap.trader.admin.dao.Investmen{
+ import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j; =   import cc.risre import cc.riskswap.trader.admo. import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cc.riskswou import cc.riskswap.trader.admin.dase import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j; = import lombok.e(i imp   import lombok.extern.slf4j.Slf4j; = import lombok.e(i import cc.risk A +import org.speC +import org.springframework.beansBi+import org.sprieh import cc.riskswap.trader.admin.common.model.;
+ import cc.risre import cc.riskswap.trader.admin.commois import cc.risre import cc.riskswap.trader.admin.common.model.dto.Dash   import cc.riskswap.trader.admin.common.modelim import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cc.riskswou import cc.riskswap.trader.admin.da p import cc.riskswap.trader.admin.dao.InvestmentLog@@@@ -14,7 +15,11 @@
+ import lombok.extern.slf4j.Slf4j; =   import cc.risre impBi import lombok.extern.slf4j.Slf4j; =   import cc.risre import cc.risktr import lombok.extern.slf4j.Slf4j; = import lombok.e(i imp   import lombok.extern.slf4j.Slf4j; = import lombok.e(i import cc.risk A +import org.speC +import org.springframework.beansBi+import org.sprieh import cc.riskswap.trader.admin.common.model.;
+ import cc.risre import cSc import cc.risre import cc.riskswap.trader.admin.commois import cc.risre import cc.riskswap.trader.admin.common.model.dto.Dash   import cc.riskswap.trader.admin.common.modelim import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cnF import lombok.extern.slf4j.Slf4j; =   import cc.risre impBi import lombok.extern.slf4j.Slf4j; =   import cc.risre import cc.risktr import lombok.extern.slf4j.Slf4j; = import lombok.e(i imp   import lombok.extern.slf4j.Slf4j; = import lombok.e(i import cc.risk A +import org.speC +import org.springframework.beansBi+import org.sprieh import cc.riskswap.trader.admis( import cc.risre import cSc import cc.risre import cc.riskswap.trader.admin.commois import cc.risre import cc.riskswap.trader.admin.common.model.dto.Dash   import cc.riskswap.trader.admin.common.modelim import cc.ris(l import cc.risre import cc.riskswap.trader.adm   import cnF import lombok.extern.slf4j.Slf4j; =   import cc.risre impBi import lombok.extern.slf4j.Slf4j; =   imp;
++            } catch (Exception e) {
++                status.setClickHouseStatus("ERROR");
++            }
++        } else {
++            status.setClickHouseStatus("DISABLED");
++        }
++        
++        return status;
++    }
++
+     private List<ChartDataDto> calculateAssetTrend(List<InvestmentLog> logs, BigDecimal brokerTotal, List<Investment> investments) {

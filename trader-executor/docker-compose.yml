@@ -1,0 +1,19 @@
+services:
+  trader-executor:
+    image: docker.1ms.run/openjdk:21-jdk
+    container_name: trader-executor
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "18090:8090"
+    environment:
+      - CONFIG_PATH=/app/config.properties
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    volumes:
+      - /opt/trader/config.properties:/app/config.properties
+      - ./trader-executor.jar:/app/trader-executor.jar
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./bin:/app/bin
+    command: sh /app/bin/run.sh
