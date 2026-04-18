@@ -1,0 +1,5 @@
+{
+    "editor.peekWidgetDefaultFocus": "tree",
+    "editor.codeLens": false,
+    "editor.hover.sticky": false
+}

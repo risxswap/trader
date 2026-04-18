@@ -41,7 +41,7 @@ logs/
 logs
 
 ### Editor ###
-.vscode/
+!.vscode/
 
 ### Web frontend ###
 admin-web/node_modules/

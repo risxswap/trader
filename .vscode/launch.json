@@ -1,0 +1,47 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Collector",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cc.riskswap.trader.collector.Application",
+            "cwd": "${workspaceFolder}/trader-collector",
+            "args": "--spring.config.location=file:${workspaceFolder}/trader-collector/src/main/resources/application.yml"
+        },
+        {
+            "name": "Admin Server",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cc.riskswap.trader.admin.Application",
+            "cwd": "${workspaceFolder}/trader-admin",
+            "args": "--spring.config.location=file:${workspaceFolder}/trader-admin/admin-server/src/main/resources/application.yml",
+            "env": {
+                "trader.log.home": "${workspaceFolder}/trader-admin/logs"
+            }
+        },
+        {
+            "name": "Admin Web",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/trader-admin/admin-web"
+        },
+        {
+            "name": "Executor",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cc.riskswap.trader.executor.Application",
+            "cwd": "${workspaceFolder}/trader-executor",
+            "args": "--spring.config.location=file:${workspaceFolder}/trader-executor/src/main/resources/application.yml"
+        },
+        {
+            "name": "Statistic",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cc.riskswap.trader.statistic.Application",
+            "cwd": "${workspaceFolder}/trader-statistic",
+            "args": "--spring.config.location=file:${workspaceFolder}/trader-statistic/src/main/resources/application.yml"
+        }
+    ]
+}
