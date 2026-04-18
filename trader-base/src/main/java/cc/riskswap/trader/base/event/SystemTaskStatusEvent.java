@@ -9,6 +9,7 @@ public class SystemTaskStatusEvent {
     private String taskCode;
     private String taskName;
     private String status;
+    private String result;
     private String cron;
     private Boolean enabled;
     private Long version;

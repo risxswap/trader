@@ -165,6 +165,13 @@ public class SystemTaskService {
         publishRefresh(task, "TASK_TRIGGER");
     }
 
+    public SystemTaskDto getDetail(Long id) {
+        SystemTask task = requireTask(id);
+        SystemTaskDto dto = BeanUtil.copyProperties(task, SystemTaskDto.class);
+        dto.setSourceType("SYSTEM");
+        return dto;
+    }
+
     private SystemTask requireTask(Long id) {
         SystemTask task = systemTaskDao.getById(id);
         if (task == null) {
@@ -174,7 +181,7 @@ public class SystemTaskService {
     }
 
     private void publishRefresh(SystemTask task, String eventType) {
-        if (!"TASK_DELETED".equals(eventType) && !"TASK_TRIGGER".equals(eventType)) {
+        if (!"TASK_DELETED".equals(eventType)) {
             SystemTaskStatusEvent event = new SystemTaskStatusEvent();
             event.setAppName(task.getAppName());
             event.setTaskType(task.getTaskType());
@@ -182,6 +189,7 @@ public class SystemTaskService {
             event.setTaskName(task.getTaskName());
             event.setEnabled(task.getEnabled());
             event.setStatus(task.getStatus());
+            event.setResult(task.getResult());
             event.setCron(task.getCron());
             event.setVersion(task.getVersion());
             event.setParamsJson(task.getParamsJson());

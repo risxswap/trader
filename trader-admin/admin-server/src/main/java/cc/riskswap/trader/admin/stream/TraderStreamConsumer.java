@@ -7,7 +7,6 @@ import cc.riskswap.trader.admin.dao.base.TaskLogDao;
 import cc.riskswap.trader.admin.dao.base.entity.Node;
 import cc.riskswap.trader.admin.dao.base.entity.NodeMonitor;
 import cc.riskswap.trader.admin.dao.base.entity.SystemTask;
-import cc.riskswap.trader.admin.dao.base.entity.TaskLog;
 import cc.riskswap.trader.base.event.NodeMonitorEvent;
 import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
 import cc.riskswap.trader.base.event.TaskLogEvent;
@@ -62,14 +61,11 @@ public class TraderStreamConsumer implements StreamListener<String, MapRecord<St
     private void handleTaskLog(String payload) {
         TaskLogEvent event = JSONUtil.toBean(payload, TaskLogEvent.class);
         if ("RUNNING".equals(event.getStatus())) {
-            taskLogDao.createRunningLog(event.getTaskName(), event.getTaskCode(), OffsetDateTime.now().toLocalDateTime(), "Task started");
+            taskLogDao.createRunningLog(event.getTaskName(), event.getTaskCode(), OffsetDateTime.now().toLocalDateTime(), event.getTraceId());
         } else if ("SUCCESS".equals(event.getStatus())) {
-            // Need to map traceId to logId, or implement an update by traceId in DAO.
-            // For now, task logs might just be appended if we change the DAO logic, 
-            // but assuming we update by traceId:
             taskLogDao.updateLogByTraceId(event.getTraceId(), "SUCCESS", event.getCostMs(), event.getRemark());
-        } else if ("FAIL".equals(event.getStatus())) {
-            taskLogDao.updateLogByTraceId(event.getTraceId(), "FAIL", event.getCostMs(), event.getRemark());
+        } else if ("FAILED".equals(event.getStatus())) {
+            taskLogDao.updateLogByTraceId(event.getTraceId(), "FAILED", event.getCostMs(), event.getRemark());
         }
     }
 
@@ -97,6 +93,7 @@ public class TraderStreamConsumer implements StreamListener<String, MapRecord<St
         SystemTask task = systemTaskDao.getByTaskTypeAndTaskCode(event.getTaskType(), event.getTaskCode());
         if (task != null) {
             task.setStatus(event.getStatus());
+            task.setResult(event.getResult());
             task.setVersion(event.getVersion());
             systemTaskDao.updateById(task);
         }

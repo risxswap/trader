@@ -46,10 +46,8 @@
           </el-form-item>
           <el-form-item label="运行状态">
             <el-select v-model="query.status" placeholder="请选择运行状态" clearable @change="handleSearch">
-              <el-option label="空闲" value="IDLE" />
+              <el-option label="已停止" value="STOPPED" />
               <el-option label="执行中" value="RUNNING" />
-              <el-option label="成功" value="SUCCESS" />
-              <el-option label="异常" value="ERROR" />
             </el-select>
           </el-form-item>
           <el-form-item label="聚合策略">
@@ -102,6 +100,11 @@
             <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="执行结果" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getResultType(row.result)" size="small">{{ getResultLabel(row.result) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="任务参数" min-width="280">
           <template #default="{ row }">
             <div class="secondary-cell secondary-cell--clamp">
@@ -121,6 +124,7 @@
               <el-button link type="primary" @click="goToInvestment(row)">查看策略</el-button>
             </template>
             <template v-else>
+              <el-button link type="primary" @click="goToDetail(row)">详情</el-button>
               <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
               <el-button link type="success" @click="triggerTask(row)">执行</el-button>
               <el-button link type="danger" @click="deleteTask(row)">删除</el-button>
@@ -301,7 +305,8 @@ const editForm = reactive({
   appName: '',
   taskCode: '',
   cron: '',
-  status: 'IDLE',
+  enabled: false,
+  status: 'STOPPED',
   paramsJson: '',
   paramSchema: '',
   remark: ''
@@ -310,7 +315,8 @@ const createForm = reactive({
   taskRef: '',
   taskName: '',
   cron: DEFAULT_CREATE_CRON,
-  status: 'IDLE',
+  enabled: false,
+  status: 'STOPPED',
   paramsJson: '',
   remark: ''
 })
@@ -384,7 +390,8 @@ const openEdit = (row: SystemTaskDto) => {
   editForm.appName = row.appName
   editForm.taskCode = row.taskCode
   editForm.cron = row.cron
-  editForm.status = row.status || 'IDLE'
+  editForm.enabled = !!row.enabled
+  editForm.status = row.status || 'STOPPED'
   editForm.paramsJson = row.paramsJson || ''
   editForm.paramSchema = row.paramSchema || ''
   editForm.remark = row.remark || ''
@@ -471,7 +478,8 @@ const openCreateDialog = async () => {
   createForm.taskRef = ''
   createForm.taskName = ''
   createForm.cron = DEFAULT_CREATE_CRON
-  createForm.status = 'IDLE'
+  createForm.enabled = false
+  createForm.status = 'STOPPED'
   createForm.paramsJson = ''
   createForm.remark = ''
   loadingDef.value = true
@@ -496,7 +504,8 @@ watch(
     if (!target) return
     createForm.taskName = target.taskName || target.taskCode
     createForm.cron = target.defaultCron || DEFAULT_CREATE_CRON
-    createForm.status = 'IDLE'
+    createForm.enabled = target.defaultEnabled ?? false
+    createForm.status = 'STOPPED'
     createForm.paramsJson = target.defaultParamsJson || ''
   }
 )
@@ -558,6 +567,10 @@ const goToInvestment = (row: SystemTaskDto) => {
   router.push({ path: '/investment/detail', query: { id: investmentId } })
 }
 
+const goToDetail = (row: SystemTaskDto) => {
+  router.push({ path: '/task/detail', query: { id: row.id } })
+}
+
 const formatParamsPreview = (value?: string) => {
   if (!value) return '未配置任务参数'
   return value
@@ -567,13 +580,7 @@ const getStatusType = (status?: string) => {
   switch (status) {
     case 'RUNNING':
       return 'success'
-    case 'SUCCESS':
-      return 'success'
-    case 'FAIL':
-    case 'ERROR':
-      return 'danger'
     case 'STOPPED':
-    case 'IDLE':
       return 'info'
     default:
       return 'warning'
@@ -584,16 +591,32 @@ const getStatusLabel = (status?: string) => {
   switch (status) {
     case 'RUNNING':
       return '执行中'
-    case 'SUCCESS':
-      return '成功'
-    case 'FAIL':
-    case 'ERROR':
-      return '异常'
     case 'STOPPED':
-    case 'IDLE':
-      return '空闲'
+      return '已停止'
     default:
       return status || '未知'
+  }
+}
+
+const getResultType = (result?: string) => {
+  switch (result) {
+    case 'SUCCESS':
+      return 'success'
+    case 'FAILED':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+const getResultLabel = (result?: string) => {
+  switch (result) {
+    case 'SUCCESS':
+      return '成功'
+    case 'FAILED':
+      return '失败'
+    default:
+      return '未执行'
   }
 }
 

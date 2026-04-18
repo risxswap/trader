@@ -13,6 +13,8 @@ import cc.riskswap.trader.admin.common.model.query.TaskDefinitionListQuery;
 import cc.riskswap.trader.admin.service.SystemTaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,5 +60,10 @@ public class SystemTaskController {
     public ResData<Void> trigger(@RequestBody SystemTaskTriggerParam param) {
         systemTaskService.trigger(param);
         return ResData.success();
+    }
+
+    @GetMapping("/{id}")
+    public ResData<SystemTaskDto> get(@PathVariable Long id) {
+        return ResData.success(systemTaskService.getDetail(id));
     }
 }

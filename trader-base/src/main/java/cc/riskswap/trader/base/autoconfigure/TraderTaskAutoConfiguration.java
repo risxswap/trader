@@ -20,9 +20,14 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.List;
 
@@ -66,6 +71,20 @@ public class TraderTaskAutoConfiguration {
     ) {
         String taskType = cc.riskswap.trader.base.task.TraderTaskType.fromNodeType(nodeProperties.getType()).name();
         return new TraderTaskRefreshSubscriber(taskType, stringRedisTemplate, traderTaskSchedulerService);
+    }
+
+    @Bean
+    public RedisMessageListenerContainer traderTaskRedisListenerContainer(
+            RedisConnectionFactory redisConnectionFactory,
+            TraderTaskRefreshSubscriber subscriber
+    ) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisConnectionFactory);
+        MessageListenerAdapter adapter = new MessageListenerAdapter(subscriber, "handle");
+        adapter.setSerializer(new StringRedisSerializer());
+        adapter.afterPropertiesSet();
+        container.addMessageListener(adapter, new PatternTopic("trader:task:refresh"));
+        return container;
     }
 
     @Bean

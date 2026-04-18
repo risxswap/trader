@@ -22,6 +22,7 @@ export interface SystemTaskDto {
   cron: string
   enabled?: boolean
   status: string
+  result?: string
   paramsJson?: string
   paramSchema?: string
   defaultParamsJson?: string
@@ -94,4 +95,9 @@ export const updateSystemTask = async (payload: SystemTaskUpdateParam): Promise<
 export const triggerSystemTask = async (payload: SystemTaskTriggerParam): Promise<ResData<void>> => {
   const res = await http.post('/task/trigger', payload)
   return res.data as ResData<void>
+}
+
+export const getSystemTaskDetail = async (id: number): Promise<ResData<SystemTaskDto>> => {
+  const res = await http.get(`/task/${id}`)
+  return res.data as ResData<SystemTaskDto>
 }

@@ -14,6 +14,9 @@ public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
     public Page<TaskLog> pageQuery(TaskLogListQuery query) {
         Page<TaskLog> page = new Page<>(query.getPageNo(), query.getPageSize());
         LambdaQueryWrapper<TaskLog> wrapper = new LambdaQueryWrapper<>();
+        if (StrUtil.isNotBlank(query.getTaskCode())) {
+            wrapper.eq(TaskLog::getTaskGroup, query.getTaskCode());
+        }
         if (StrUtil.isNotBlank(query.getTaskName())) {
             wrapper.like(TaskLog::getTaskName, query.getTaskName());
         }

@@ -1,6 +1,7 @@
 package cc.riskswap.trader.base.task;
 
 import cc.riskswap.trader.base.event.TraderStreamPublisher;
+import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -8,11 +9,13 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +33,7 @@ class TraderTaskExecutorTest {
         SampleTask task = new SampleTask();
         TraderTaskRegistry registry = new TraderTaskRegistry(List.of(task));
         TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, streamPublisher);
+        List<SystemTaskStatusEvent> publishedEvents = new ArrayList<>();
 
         when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(hashOperations.get("trader:task:instances:COLLECTOR", "fundSync")).thenReturn("""
@@ -37,13 +41,64 @@ class TraderTaskExecutorTest {
                 """);
         when(traderTaskLock.newRequestId()).thenReturn("req-1");
         when(traderTaskLock.tryLock("task:run:COLLECTOR:fundSync:1710000000", "req-1")).thenReturn(true);
+        doAnswer(invocation -> {
+            SystemTaskStatusEvent event = invocation.getArgument(1);
+            SystemTaskStatusEvent snapshot = new SystemTaskStatusEvent();
+            snapshot.setStatus(event.getStatus());
+            snapshot.setResult(event.getResult());
+            publishedEvents.add(snapshot);
+            return null;
+        }).when(streamPublisher).publish(eq("SYSTEM_TASK_STATUS"), any(SystemTaskStatusEvent.class));
 
         executor.execute("COLLECTOR", "fundSync", 1710000000L);
 
-        verify(streamPublisher, atLeastOnce()).publish(eq("SYSTEM_TASK_STATUS"), any());
+        verify(streamPublisher, times(2)).publish(eq("SYSTEM_TASK_STATUS"), any(SystemTaskStatusEvent.class));
+        org.assertj.core.api.Assertions.assertThat(publishedEvents).hasSize(2);
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(0).getStatus()).isEqualTo("RUNNING");
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(0).getResult()).isNull();
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(1).getStatus()).isEqualTo("STOPPED");
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(1).getResult()).isEqualTo("SUCCESS");
         org.assertj.core.api.Assertions.assertThat(output.getOut())
                 .contains("Trigger trader task execution")
                 .contains("fundSync");
+    }
+
+    @Test
+    void should_publish_failed_result_when_task_execution_throws() throws Exception {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        HashOperations<String, Object, Object> hashOperations = mock(HashOperations.class);
+        TraderTaskLock traderTaskLock = mock(TraderTaskLock.class);
+        TraderStreamPublisher streamPublisher = mock(TraderStreamPublisher.class);
+        FailingTask task = new FailingTask();
+        TraderTaskRegistry registry = new TraderTaskRegistry(List.of(task));
+        TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, streamPublisher);
+        List<SystemTaskStatusEvent> publishedEvents = new ArrayList<>();
+
+        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.get("trader:task:instances:COLLECTOR", "fundSync")).thenReturn("""
+                {"taskType":"COLLECTOR","taskCode":"fundSync","taskName":"同步基金","enabled":true,"paramsJson":"{}"}
+                """);
+        when(traderTaskLock.newRequestId()).thenReturn("req-1");
+        when(traderTaskLock.tryLock("task:run:COLLECTOR:fundSync:1710000000", "req-1")).thenReturn(true);
+        doAnswer(invocation -> {
+            SystemTaskStatusEvent event = invocation.getArgument(1);
+            SystemTaskStatusEvent snapshot = new SystemTaskStatusEvent();
+            snapshot.setStatus(event.getStatus());
+            snapshot.setResult(event.getResult());
+            publishedEvents.add(snapshot);
+            return null;
+        }).when(streamPublisher).publish(eq("SYSTEM_TASK_STATUS"), any(SystemTaskStatusEvent.class));
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> executor.execute("COLLECTOR", "fundSync", 1710000000L));
+
+        verify(streamPublisher, times(2)).publish(eq("SYSTEM_TASK_STATUS"), any(SystemTaskStatusEvent.class));
+        org.assertj.core.api.Assertions.assertThat(publishedEvents).hasSize(2);
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(0).getStatus()).isEqualTo("RUNNING");
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(0).getResult()).isNull();
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(1).getStatus()).isEqualTo("STOPPED");
+        org.assertj.core.api.Assertions.assertThat(publishedEvents.get(1).getResult()).isEqualTo("FAILED");
     }
 
     private static class SampleTask implements CollectorTask {
@@ -74,6 +129,13 @@ class TraderTaskExecutorTest {
 
         @Override
         public void execute(TraderTaskContext context) {
+        }
+    }
+
+    private static class FailingTask extends SampleTask {
+        @Override
+        public void execute(TraderTaskContext context) {
+            throw new IllegalStateException("boom");
         }
     }
 }

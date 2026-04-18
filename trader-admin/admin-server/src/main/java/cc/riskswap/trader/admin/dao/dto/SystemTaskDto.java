@@ -12,6 +12,7 @@ public class SystemTaskDto {
     private String taskName;
     private String cron;
     private String status;
+    private String result;
     private String paramSchema;
     private String paramsJson;
     private String defaultParamsJson;

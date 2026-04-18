@@ -67,22 +67,22 @@ public class TraderTaskExecutor {
         try {
             log.info("Trigger trader task execution taskType={} taskCode={} taskName={} fireTimeEpochSec={} triggerType={}",
                     taskType, taskCode, instance.getTaskName(), fireTimeEpochSec, context.getTriggerType());
-            sendStatus(instance, "RUNNING");
+            sendStatus(instance, "RUNNING", null);
             task.execute(context);
             log.info("Trader task execution completed taskType={} taskCode={} taskName={} fireTimeEpochSec={}",
                     taskType, taskCode, instance.getTaskName(), fireTimeEpochSec);
+            sendStatus(instance, "STOPPED", "SUCCESS");
         } catch (Exception e) {
-            sendStatus(instance, "ERROR");
+            sendStatus(instance, "STOPPED", "FAILED");
             log.error("Trader task execution failed taskType={} taskCode={} taskName={} fireTimeEpochSec={}",
                     taskType, taskCode, instance.getTaskName(), fireTimeEpochSec, e);
             throw e;
-        } finally {
-            sendStatus(instance, "IDLE");
         }
     }
 
-    private void sendStatus(SystemTaskStatusEvent instance, String status) {
+    private void sendStatus(SystemTaskStatusEvent instance, String status, String result) {
         instance.setStatus(status);
+        instance.setResult(result);
         if (streamPublisher != null) {
             streamPublisher.publish("SYSTEM_TASK_STATUS", instance);
         }

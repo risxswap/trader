@@ -25,6 +25,7 @@ import NodeList from '../pages/node/List.vue'
 import NodeGroupList from '../pages/node/Group.vue'
 import TaskList from '../pages/logs/TaskList.vue'
 import TaskManage from '../pages/task/Manage.vue'
+import TaskDetail from '../pages/task/Detail.vue'
 
 const wrapRouteComponent = (name: string, component: Component) =>
   defineComponent({
@@ -211,6 +212,15 @@ export const appRouteChildren: RouteRecordRaw[] = [
         component: wrapRouteComponent('TaskManage', TaskManage),
         meta: {
           title: '任务管理'
+        }
+      },
+      {
+        path: '/task/detail',
+        name: 'TaskDetail',
+        component: wrapRouteComponent('TaskDetail', TaskDetail),
+        meta: {
+          title: '任务详情',
+          menuKind: 'hidden'
         }
       },
       {

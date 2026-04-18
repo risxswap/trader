@@ -85,8 +85,67 @@ public class UpgradeServiceTest {
 
         Assertions.assertTrue(Arrays.stream(mysqlResources)
                 .anyMatch(resource -> "1.0.0.sql".equals(resource.getFilename())));
+        Assertions.assertTrue(Arrays.stream(mysqlResources)
+                .anyMatch(resource -> "1.0.3.sql".equals(resource.getFilename())));
+        Assertions.assertTrue(Arrays.stream(mysqlResources)
+                .anyMatch(resource -> "1.0.4.sql".equals(resource.getFilename())));
         Assertions.assertTrue(Arrays.stream(clickHouseResources)
                 .anyMatch(resource -> "1.0.0.sql".equals(resource.getFilename())));
+    }
+
+    @Test
+    void shouldKeepTaskLogSchemaAlignedWithEntityFields() throws Exception {
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+        String initScript = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/mysql.sql")
+        ));
+        String upgradeScript = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/upgrade/mysql/1.0.3.sql")
+        ));
+
+        Assertions.assertTrue(initScript.contains("trace_id VARCHAR(128)"),
+                "mysql.sql must define task_log.trace_id");
+        Assertions.assertTrue(initScript.contains("remark TEXT"),
+                "mysql.sql must define task_log.remark");
+        Assertions.assertTrue(upgradeScript.contains("ADD COLUMN trace_id"),
+                "1.0.3 upgrade must add trace_id");
+        Assertions.assertTrue(upgradeScript.contains("ADD COLUMN remark"),
+                "1.0.3 upgrade must add remark");
+    }
+
+    @Test
+    void shouldKeepSystemTaskResultSchemaAligned() throws Exception {
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+        String initScript = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/mysql.sql")
+        ));
+        String upgradeScript = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/upgrade/mysql/1.0.4.sql")
+        ));
+
+        Assertions.assertTrue(initScript.contains("result VARCHAR(16)"),
+                "mysql.sql must define system_task.result");
+        Assertions.assertTrue(upgradeScript.contains("ADD COLUMN result"),
+                "1.0.4 upgrade must add result");
+    }
+
+    @Test
+    void shouldUseMysqlCompatibleAlterSyntaxInUpgradeScripts() throws Exception {
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+        String taskLogUpgrade = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/upgrade/mysql/1.0.3.sql")
+        ));
+        String systemTaskUpgrade = readResource(Objects.requireNonNull(
+                resolver.getResource("classpath:db/upgrade/mysql/1.0.4.sql")
+        ));
+
+        Assertions.assertFalse(taskLogUpgrade.contains("ADD COLUMN IF NOT EXISTS"),
+                "mysql upgrade scripts must not use unsupported ADD COLUMN IF NOT EXISTS");
+        Assertions.assertFalse(systemTaskUpgrade.contains("ADD COLUMN IF NOT EXISTS"),
+                "mysql upgrade scripts must not use unsupported ADD COLUMN IF NOT EXISTS");
     }
 
     @Test

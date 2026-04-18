@@ -3,6 +3,7 @@ package cc.riskswap.trader.admin.test.controller;
 import cc.riskswap.trader.admin.controller.SystemTaskController;
 import jakarta.validation.Valid;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -38,5 +39,12 @@ class SystemTaskControllerRouteTest {
         assertTrue(definitions.isAnnotationPresent(PostMapping.class));
         assertTrue(create.isAnnotationPresent(PostMapping.class));
         assertTrue(delete.isAnnotationPresent(PostMapping.class));
+    }
+
+    @Test
+    void should_expose_detail_route() throws Exception {
+        Method detail = SystemTaskController.class.getMethod("get", Long.class);
+        assertTrue(detail.isAnnotationPresent(GetMapping.class));
+        assertEquals("/{id}", detail.getAnnotation(GetMapping.class).value()[0]);
     }
 }

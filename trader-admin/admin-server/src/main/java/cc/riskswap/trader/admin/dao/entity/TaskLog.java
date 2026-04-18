@@ -14,6 +14,7 @@ public class TaskLog {
     private Long id;
     private String taskName;
     private String taskGroup;
+    private String traceId;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
     private String status;

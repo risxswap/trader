@@ -1,6 +1,5 @@
 package cc.riskswap.trader.base.autoconfigure;
 
-import cc.riskswap.trader.base.task.TraderTaskRefreshSubscriber;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -14,9 +13,6 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.listener.PatternTopic;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.StringUtils;
@@ -63,19 +59,4 @@ public class TraderRedisAutoConfiguration {
         return redisTemplate;
     }
 
-    @Bean
-    @ConditionalOnBean({RedisConnectionFactory.class, TraderTaskRefreshSubscriber.class})
-    @ConditionalOnMissingBean(name = "traderTaskRedisListenerContainer")
-    public RedisMessageListenerContainer traderTaskRedisListenerContainer(
-            RedisConnectionFactory redisConnectionFactory,
-            TraderTaskRefreshSubscriber subscriber
-    ) {
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(redisConnectionFactory);
-        MessageListenerAdapter adapter = new MessageListenerAdapter(subscriber, "handle");
-        adapter.setSerializer(new StringRedisSerializer());
-        adapter.afterPropertiesSet();
-        container.addMessageListener(adapter, new PatternTopic("trader:task:refresh"));
-        return container;
-    }
 }

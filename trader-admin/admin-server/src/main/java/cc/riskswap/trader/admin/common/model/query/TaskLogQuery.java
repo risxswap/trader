@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class TaskLogQuery extends PageDto<Object> {
+    private String taskCode;
     private String taskName;
     private String status;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

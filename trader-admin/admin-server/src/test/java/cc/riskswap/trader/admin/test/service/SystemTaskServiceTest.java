@@ -52,7 +52,26 @@ public class SystemTaskServiceTest {
         Assertions.assertEquals(5, result.getPageSize());
         Assertions.assertEquals(1, result.getItems().size());
         Assertions.assertEquals("fundSync", result.getItems().get(0).getTaskCode());
+        Assertions.assertEquals("SUCCESS", result.getItems().get(0).getResult());
         Assertions.assertEquals("{\"fullSync\":true}", result.getItems().get(0).getParamsJson());
+    }
+
+    @Test
+    void should_get_task_detail() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        SystemTask task = sampleTask();
+        Mockito.when(systemTaskDao.getById(1L)).thenReturn(task);
+
+        SystemTaskDto detail = systemTaskService.getDetail(1L);
+
+        Assertions.assertEquals(1L, detail.getId());
+        Assertions.assertEquals("fundSync", detail.getTaskCode());
+        Assertions.assertEquals("SUCCESS", detail.getResult());
     }
 
     @Test
@@ -104,6 +123,8 @@ public class SystemTaskServiceTest {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
         SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
@@ -123,6 +144,7 @@ public class SystemTaskServiceTest {
         Assertions.assertEquals("fundSync", message.taskCode());
         Assertions.assertEquals(3L, message.version());
         Assertions.assertEquals("TASK_TRIGGER", message.eventType());
+        Mockito.verify(hashOperations).put(Mockito.eq("trader:task:instances:COLLECTOR"), Mockito.eq("fundSync"), Mockito.anyString());
     }
 
     @Test
@@ -205,6 +227,7 @@ public class SystemTaskServiceTest {
         task.setTaskName("同步基金");
         task.setCron("0 0 1 * * ?");
         task.setStatus("RUNNING");
+        task.setResult("SUCCESS");
         task.setParamsJson("{\"fullSync\":true}");
         task.setUpdatedAt(OffsetDateTime.parse("2026-04-15T10:00:00+08:00"));
         return task;
