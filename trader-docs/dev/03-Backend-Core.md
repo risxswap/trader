@@ -34,7 +34,7 @@
 
 业务工程只需要：
 
-- 引入依赖：`cc.riskswap.trader:trader-base:1.0.0-SNAPSHOT`
+- 引入依赖：`cc.riskswap.trader:base:1.0.0-SNAPSHOT`
 - 在 `application.yml`（或外部配置）提供：
   - `trader.mysql.url/username/password`
   - `trader.clickhouse.url/username/password`

@@ -4,20 +4,20 @@
 
 ```mermaid
 flowchart LR
-  BASE[trader-base<br/>cc.riskswap.trader:trader-base]
+  BASE[trader-base<br/>cc.riskswap.trader:base]
 
   ADMIN[admin-server<br/>cc.riskswap.trader:admin-server]
-  COLLECTOR[trader-collector<br/>cc.riskswap.trader:fund]
-  EXECUTOR[trader-executor<br/>cc.riskswap:trader-executor]
+  COLLECTOR[trader-collector<br/>cc.riskswap.trader:collector]
+  EXECUTOR[trader-executor<br/>cc.riskswap.trader:executor]
 
   ADMIN --> BASE
   COLLECTOR --> BASE
   EXECUTOR --> BASE
 ```
 
-- `admin-server`：依赖 `trader-base`，见 [admin-server/pom.xml](../../trader-admin/admin-server/pom.xml#L22-L27)
-- `trader-collector`：依赖 `trader-base`，见 [trader-collector/pom.xml](../../trader-collector/pom.xml#L32-L41)
-- `trader-executor`：依赖 `trader-base`，见 [trader-executor/pom.xml](../../trader-executor/pom.xml#L33-L39)
+- `admin-server`：依赖 `base`，见 [admin-server/pom.xml](../../trader-admin/admin-server/pom.xml#L22-L27)
+- `trader-collector`：依赖 `base`，见 [trader-collector/pom.xml](../../trader-collector/pom.xml#L32-L41)
+- `trader-executor`：依赖 `base`，见 [trader-executor/pom.xml](../../trader-executor/pom.xml#L33-L39)
 
 ## 运行时依赖（服务级）
 

@@ -6,6 +6,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "cc.riskswap.trader.collector.Application",
+            "projectName": "collector",
             "cwd": "${workspaceFolder}/trader-collector",
             "args": "--spring.config.location=file:${workspaceFolder}/trader-collector/src/main/resources/application.yml"
         },
@@ -14,6 +15,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "cc.riskswap.trader.admin.Application",
+            "projectName": "admin-server",
             "cwd": "${workspaceFolder}/trader-admin",
             "args": "--spring.config.location=file:${workspaceFolder}/trader-admin/admin-server/src/main/resources/application.yml",
             "env": {
@@ -32,6 +34,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "cc.riskswap.trader.executor.Application",
+            "projectName": "executor",
             "cwd": "${workspaceFolder}/trader-executor",
             "args": "--spring.config.location=file:${workspaceFolder}/trader-executor/src/main/resources/application.yml"
         },
@@ -40,6 +43,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "cc.riskswap.trader.statistic.Application",
+            "projectName": "statistic",
             "cwd": "${workspaceFolder}/trader-statistic",
             "args": "--spring.config.location=file:${workspaceFolder}/trader-statistic/src/main/resources/application.yml"
         }

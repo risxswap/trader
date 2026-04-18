@@ -8,8 +8,8 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
-	<groupId>cc.riskswap</groupId>
-	<artifactId>trader-executor</artifactId>
+	<groupId>cc.riskswap.trader</groupId>
+	<artifactId>executor</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>trader-executor</name>
 	<description>Trader Executor</description>
@@ -33,7 +33,7 @@
 
 		<dependency>
 			<groupId>cc.riskswap.trader</groupId>
-			<artifactId>trader-base</artifactId>
+			<artifactId>base</artifactId>
 		</dependency>
 
 		<dependency>

@@ -30,7 +30,7 @@
 ```xml
 <dependency>
     <groupId>cc.riskswap.trader</groupId>
-    <artifactId>trader-base</artifactId>
+    <artifactId>base</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```

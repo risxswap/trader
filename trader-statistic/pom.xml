@@ -9,7 +9,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<groupId>cc.riskswap.trader</groupId>
-	<artifactId>trader-statistic</artifactId>
+	<artifactId>statistic</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>trader-statistic</name>
 	<description>trader-statistic</description>
@@ -31,7 +31,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>cc.riskswap.trader</groupId>
-			<artifactId>trader-base</artifactId>
+			<artifactId>base</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

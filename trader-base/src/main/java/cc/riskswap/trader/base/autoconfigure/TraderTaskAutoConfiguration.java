@@ -6,7 +6,6 @@ import cc.riskswap.trader.base.task.TraderTaskMetadataSyncService;
 import cc.riskswap.trader.base.task.TraderTaskPoller;
 import cc.riskswap.trader.base.task.TraderTaskPollingJob;
 import cc.riskswap.trader.base.task.TraderTaskProperties;
-import cc.riskswap.trader.base.task.TraderTaskRefreshPublisher;
 import cc.riskswap.trader.base.task.TraderTaskRefreshSubscriber;
 import cc.riskswap.trader.base.task.TraderTaskRegistry;
 import cc.riskswap.trader.base.task.TraderTaskSchedulerService;
@@ -44,6 +43,7 @@ public class TraderTaskAutoConfiguration {
     public SchedulerFactoryBean traderTaskSchedulerFactoryBean(ApplicationContext applicationContext) {
         SchedulerFactoryBean factoryBean = new SchedulerFactoryBean();
         factoryBean.setApplicationContext(applicationContext);
+        factoryBean.setApplicationContextSchedulerContextKey("applicationContext");
         factoryBean.setOverwriteExistingJobs(true);
         factoryBean.setAutoStartup(true);
         return factoryBean;
