@@ -1,6 +1,6 @@
 package cc.riskswap.trader.base.autoconfigure;
 
-import cc.riskswap.trader.base.event.TraderStreamPublisher;
+import cc.riskswap.trader.base.task.SystemTaskStatusStore;
 import cc.riskswap.trader.base.task.TraderTask;
 import cc.riskswap.trader.base.task.TraderTaskMetadataSyncService;
 import cc.riskswap.trader.base.task.TraderTaskPoller;
@@ -13,6 +13,7 @@ import cc.riskswap.trader.base.task.TraderTaskLock;
 import cc.riskswap.trader.base.task.TraderTaskExecutor;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -127,18 +128,18 @@ public class TraderTaskAutoConfiguration {
 
     @Bean
     @ConditionalOnClass(StringRedisTemplate.class)
-    public TraderStreamPublisher traderStreamPublisher(StringRedisTemplate stringRedisTemplate) {
-        return new TraderStreamPublisher(stringRedisTemplate);
-    }
-
-    @Bean
-    @ConditionalOnClass(StringRedisTemplate.class)
     public TraderTaskLock traderTaskLock(StringRedisTemplate stringRedisTemplate, TraderTaskProperties properties) {
         return new TraderTaskLock(stringRedisTemplate, properties.getLockExpireSeconds());
     }
 
     @Bean
-    public TraderTaskExecutor traderTaskExecutor(TraderTaskRegistry registry, StringRedisTemplate stringRedisTemplate, TraderTaskLock lock, TraderStreamPublisher streamPublisher) {
-        return new TraderTaskExecutor(registry, stringRedisTemplate, lock, streamPublisher);
+    @ConditionalOnBean(name = "mysqlDataSource")
+    public SystemTaskStatusStore systemTaskStatusStore(cc.riskswap.trader.base.dao.SystemTaskDao systemTaskDao) {
+        return new SystemTaskStatusStore(systemTaskDao);
+    }
+
+    @Bean
+    public TraderTaskExecutor traderTaskExecutor(TraderTaskRegistry registry, StringRedisTemplate stringRedisTemplate, TraderTaskLock lock, SystemTaskStatusStore systemTaskStatusStore) {
+        return new TraderTaskExecutor(registry, stringRedisTemplate, lock, systemTaskStatusStore);
     }
 }

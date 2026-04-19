@@ -1,7 +1,6 @@
 package cc.riskswap.trader.base.task;
 
 import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
-import cc.riskswap.trader.base.event.TraderStreamPublisher;
 import cn.hutool.json.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +16,13 @@ public class TraderTaskExecutor {
     private final TraderTaskRegistry registry;
     private final StringRedisTemplate stringRedisTemplate;
     private final TraderTaskLock lock;
-    private final TraderStreamPublisher streamPublisher;
+    private final SystemTaskStatusStore statusStore;
 
-    public TraderTaskExecutor(TraderTaskRegistry registry, StringRedisTemplate stringRedisTemplate, TraderTaskLock lock, TraderStreamPublisher streamPublisher) {
+    public TraderTaskExecutor(TraderTaskRegistry registry, StringRedisTemplate stringRedisTemplate, TraderTaskLock lock, SystemTaskStatusStore statusStore) {
         this.registry = registry;
         this.stringRedisTemplate = stringRedisTemplate;
         this.lock = lock;
-        this.streamPublisher = streamPublisher;
+        this.statusStore = statusStore;
     }
 
     public void execute(String taskType, String taskCode, long fireTimeEpochSec) throws Exception {
@@ -83,8 +82,8 @@ public class TraderTaskExecutor {
     private void sendStatus(SystemTaskStatusEvent instance, String status, String result) {
         instance.setStatus(status);
         instance.setResult(result);
-        if (streamPublisher != null) {
-            streamPublisher.publish("SYSTEM_TASK_STATUS", instance);
+        if (statusStore != null) {
+            statusStore.writeStatus(instance.getTaskType(), instance.getTaskCode(), status, result, instance.getVersion());
         }
     }
 }
