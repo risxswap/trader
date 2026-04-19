@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import cc.riskswap.trader.executor.common.ExecutorContext;
-import cc.riskswap.trader.base.strategy.config.RelativeStrengthStrategyConfig;
+import cc.riskswap.trader.executor.strategy.config.RelativeStrengthStrategyConfig;
 import cc.riskswap.trader.base.dao.CorrelationDao;
 import cc.riskswap.trader.base.dao.FundDao;
 import cc.riskswap.trader.base.dao.FundNavDao;

@@ -27,7 +27,7 @@ import cc.riskswap.trader.base.dao.entity.InvestmentLog;
 import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
 import cc.riskswap.trader.base.dao.entity.InvestmentTrading;
 import cc.riskswap.trader.executor.pubsub.publisher.InvestmentLogPublisher;
-import cc.riskswap.trader.base.strategy.config.BaseStrategyConfig;
+import cc.riskswap.trader.executor.strategy.config.BaseStrategyConfig;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 

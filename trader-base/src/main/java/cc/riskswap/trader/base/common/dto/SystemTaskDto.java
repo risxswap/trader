@@ -1,4 +1,4 @@
-package cc.riskswap.trader.base.dao.dto;
+package cc.riskswap.trader.base.common.dto;
 
 import lombok.Data;
 

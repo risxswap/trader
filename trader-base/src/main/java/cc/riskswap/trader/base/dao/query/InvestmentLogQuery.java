@@ -1,6 +1,6 @@
 package cc.riskswap.trader.base.dao.query;
 
-import cc.riskswap.trader.base.dao.dto.PageDto;
+import cc.riskswap.trader.base.common.dto.PageDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

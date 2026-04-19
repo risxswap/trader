@@ -1,10 +1,11 @@
 package cc.riskswap.trader.base.dao.query;
 
-import cc.riskswap.trader.base.dao.dto.PageDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
+
+import cc.riskswap.trader.base.common.dto.PageDto;
 
 /**
  * 证券相关性查询参数

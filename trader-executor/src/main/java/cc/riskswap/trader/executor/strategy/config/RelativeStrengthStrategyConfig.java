@@ -1,7 +1,6 @@
-package cc.riskswap.trader.base.strategy.config;
+package cc.riskswap.trader.executor.strategy.config;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,3 +16,4 @@ public class RelativeStrengthStrategyConfig extends BaseStrategyConfig {
     @JsonPropertyDescription("排名")
     private Integer topNum;
 }
+
