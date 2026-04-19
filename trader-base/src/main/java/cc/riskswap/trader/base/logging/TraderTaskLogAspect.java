@@ -1,7 +1,5 @@
 package cc.riskswap.trader.base.logging;
 
-import cc.riskswap.trader.base.event.TaskLogEvent;
-import cc.riskswap.trader.base.event.TraderStreamPublisher;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -22,14 +20,10 @@ import java.time.LocalDateTime;
 public class TraderTaskLogAspect {
 
     private static final Logger log = LoggerFactory.getLogger(TraderTaskLogAspect.class);
-    private final TraderStreamPublisher traderStreamPublisher;
-    private final String appName;
-    private final String taskType;
+    private final TaskLogStore taskLogStore;
 
-    public TraderTaskLogAspect(@Nullable TraderStreamPublisher traderStreamPublisher, String appName, String taskType) {
-        this.traderStreamPublisher = traderStreamPublisher;
-        this.appName = appName;
-        this.taskType = taskType;
+    public TraderTaskLogAspect(@Nullable TaskLogStore taskLogStore) {
+        this.taskLogStore = taskLogStore;
     }
 
     @Around("@annotation(traderTaskLog)")
@@ -81,15 +75,8 @@ public class TraderTaskLogAspect {
 
     private void persistRunningLog(String taskName, String taskGroup, LocalDateTime startTime, String traceId) {
         try {
-            if (traderStreamPublisher != null) {
-                TaskLogEvent event = new TaskLogEvent();
-                event.setAppName(appName);
-                event.setTaskType(taskType);
-                event.setTaskCode(taskGroup);
-                event.setTaskName(taskName);
-                event.setTraceId(traceId);
-                event.setStatus("RUNNING");
-                traderStreamPublisher.publish("TASK_LOG", event);
+            if (taskLogStore != null) {
+                taskLogStore.writeRunning(taskName, taskGroup, startTime, traceId);
             }
         } catch (Exception exception) {
             log.error("Persist task start log failed taskName={}", taskName, exception);
@@ -106,17 +93,13 @@ public class TraderTaskLogAspect {
                                    LocalDateTime startTime,
                                    long executionMs) {
         try {
-            if (traderStreamPublisher != null) {
-                TaskLogEvent event = new TaskLogEvent();
-                event.setAppName(appName);
-                event.setTaskType(taskType);
-                event.setTaskCode(taskGroup);
-                event.setTaskName(taskName);
-                event.setTraceId(traceId);
-                event.setStatus("SUCCESS");
-                event.setCostMs(executionMs);
-                event.setRemark(buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "SUCCESS", executionMs, result, null));
-                traderStreamPublisher.publish("TASK_LOG", event);
+            if (taskLogStore != null) {
+                taskLogStore.writeFinished(
+                        traceId,
+                        "SUCCESS",
+                        executionMs,
+                        buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "SUCCESS", executionMs, result, null)
+                );
             }
         } catch (Exception exception) {
             log.error("Persist task success log failed taskName={} traceId={}", taskName, traceId, exception);
@@ -133,17 +116,13 @@ public class TraderTaskLogAspect {
                                    LocalDateTime startTime,
                                    long executionMs) {
         try {
-            if (traderStreamPublisher != null) {
-                TaskLogEvent event = new TaskLogEvent();
-                event.setAppName(appName);
-                event.setTaskType(taskType);
-                event.setTaskCode(taskGroup);
-                event.setTaskName(taskName);
-                event.setTraceId(traceId);
-                event.setStatus("FAIL");
-                event.setCostMs(executionMs);
-                event.setRemark(buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "FAIL", executionMs, null, throwable));
-                traderStreamPublisher.publish("TASK_LOG", event);
+            if (taskLogStore != null) {
+                taskLogStore.writeFinished(
+                        traceId,
+                        "FAILED",
+                        executionMs,
+                        buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "FAILED", executionMs, null, throwable)
+                );
             }
         } catch (Exception exception) {
             log.error("Persist task failure log failed taskName={} traceId={}", taskName, traceId, exception);

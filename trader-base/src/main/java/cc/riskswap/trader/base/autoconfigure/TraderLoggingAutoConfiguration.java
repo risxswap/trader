@@ -1,11 +1,11 @@
 package cc.riskswap.trader.base.autoconfigure;
 
-import cc.riskswap.trader.base.event.TraderStreamPublisher;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.logging.TaskLogStore;
 import cc.riskswap.trader.base.logging.TraderTaskLogAspect;
 import cc.riskswap.trader.base.logging.TraderThreadContextTaskDecorator;
-import cc.riskswap.trader.base.config.TraderNodeProperties;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,13 +18,16 @@ import org.springframework.core.task.TaskDecorator;
 public class TraderLoggingAutoConfiguration {
 
     @Bean
+    @ConditionalOnBean(TaskLogDao.class)
     @ConditionalOnMissingBean
-    public TraderTaskLogAspect traderTaskLogAspect(
-            ObjectProvider<TraderStreamPublisher> traderStreamPublisherProvider,
-            TraderNodeProperties nodeProperties) {
-        String appName = nodeProperties.getName();
-        String taskType = nodeProperties.getType();
-        return new TraderTaskLogAspect(traderStreamPublisherProvider.getIfAvailable(), appName, taskType);
+    public TaskLogStore taskLogStore(TaskLogDao taskLogDao) {
+        return new TaskLogStore(taskLogDao);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TraderTaskLogAspect traderTaskLogAspect(TaskLogStore taskLogStore) {
+        return new TraderTaskLogAspect(taskLogStore);
     }
 
     @Bean
