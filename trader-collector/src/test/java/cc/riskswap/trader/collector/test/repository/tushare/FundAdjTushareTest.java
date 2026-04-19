@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.common.model.query.FundAdjQuery;
-import cc.riskswap.trader.collector.repository.entity.FundAdj;
 import cc.riskswap.trader.collector.repository.tushare.FundAdjTushare;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest

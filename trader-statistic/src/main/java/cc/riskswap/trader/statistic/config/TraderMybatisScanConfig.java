@@ -1,11 +1,11 @@
-package cc.riskswap.trader.admin.config;
+package cc.riskswap.trader.statistic.config;
 
 import cc.riskswap.trader.base.datasource.annotation.ClickHouseMapper;
 import cc.riskswap.trader.base.datasource.annotation.MysqlMapper;
 import cc.riskswap.trader.base.datasource.support.AutoConfiguredMapperScannerConfigurer;
-import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration(proxyBeanMethods = false)
 public class TraderMybatisScanConfig {
@@ -30,3 +30,4 @@ public class TraderMybatisScanConfig {
         return configurer;
     }
 }
+

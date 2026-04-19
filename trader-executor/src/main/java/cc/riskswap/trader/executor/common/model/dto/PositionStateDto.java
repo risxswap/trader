@@ -1,7 +1,7 @@
 package cc.riskswap.trader.executor.common.model.dto;
 
-import cc.riskswap.trader.executor.dao.entity.InvestmentPosition;
 import cc.riskswap.trader.executor.common.model.param.TradingParam;
+import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;

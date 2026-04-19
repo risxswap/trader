@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-import cc.riskswap.trader.collector.repository.dao.mapper.CalendarMapper;
-import cc.riskswap.trader.collector.repository.dao.mapper.FundAdjMapper;
-import cc.riskswap.trader.collector.repository.dao.mapper.FundMapper;
-import cc.riskswap.trader.collector.repository.dao.mapper.FundMarketMapper;
-import cc.riskswap.trader.collector.repository.dao.mapper.FundNavMapper;
-import cc.riskswap.trader.collector.repository.dao.mapper.ImportLogMapper;
+import cc.riskswap.trader.base.dao.mapper.CalendarMapper;
+import cc.riskswap.trader.base.dao.mapper.FundAdjMapper;
+import cc.riskswap.trader.base.dao.mapper.FundMapper;
+import cc.riskswap.trader.base.dao.mapper.FundMarketMapper;
+import cc.riskswap.trader.base.dao.mapper.FundNavMapper;
+import cc.riskswap.trader.base.dao.mapper.ImportLogMapper;
 
 class MybatisConfigStructureTest {
 

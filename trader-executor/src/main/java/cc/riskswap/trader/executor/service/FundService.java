@@ -17,9 +17,9 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.springframework.stereotype.Service;
 
-import cc.riskswap.trader.executor.dao.FundDao;
-import cc.riskswap.trader.executor.dao.entity.Fund;
-import cc.riskswap.trader.executor.dao.entity.FundMarket;
+import cc.riskswap.trader.base.dao.FundDao;
+import cc.riskswap.trader.base.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +44,7 @@ public class FundService {
         List<Fund> fundList = fundDao.listAll();
         Map<String, Map<LocalDate, Double>> fundDailyReturns = new HashMap<>();
         for (Fund fund : fundList) {
-            String code = fund.getSymbol();
+            String code = fund.getCode();
             List<FundMarket> markets = fundMarketService.getData(code, startDate, endDate);
             if (CollectionUtil.isEmpty(markets)) {
                 continue;
@@ -52,7 +52,7 @@ public class FundService {
             Map<LocalDate, Double> data = new HashMap<>();
             for (FundMarket market : markets) {
                 BigDecimal pctChg = market.getPctChg();
-                data.put(market.getTime(), pctChg.doubleValue());
+                data.put(market.getTime().toLocalDate(), pctChg.doubleValue());
             }
             fundDailyReturns.put(code, data);
         }

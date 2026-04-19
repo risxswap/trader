@@ -20,7 +20,7 @@ public class FundNav {
     /**
      * 代码
      */
-    private String symbol;
+    private String code;
 
     /**
      * 单位净值

@@ -4,10 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import cc.riskswap.trader.executor.common.ExecutorContext;
-import cc.riskswap.trader.executor.dao.CorrelationDao;
-import cc.riskswap.trader.executor.dao.FundDao;
-import cc.riskswap.trader.executor.dao.FundNavDao;
 import cc.riskswap.trader.base.strategy.config.RelativeStrengthStrategyConfig;
+import cc.riskswap.trader.base.dao.CorrelationDao;
+import cc.riskswap.trader.base.dao.FundDao;
+import cc.riskswap.trader.base.dao.FundNavDao;
 import lombok.extern.slf4j.Slf4j;
 
 

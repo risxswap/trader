@@ -23,7 +23,7 @@ public class Fund {
     /**
      * 基金代码
      */
-    private String symbol;
+    private String code;
 
     /**
      * 简称

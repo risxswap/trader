@@ -42,7 +42,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
      */
     public OffsetDateTime getLatestTradeDateByCode(String code) {
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundMarket::getSymbol, code);
+        queryWrapper.eq(FundMarket::getCode, code);
         queryWrapper.orderByDesc(FundMarket::getTime);
         queryWrapper.last("LIMIT 1");
         FundMarket fundMarket = baseMapper.selectOne(queryWrapper);
@@ -57,7 +57,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
         queryWrapper.orderByDesc(FundMarket::getTime);
         queryWrapper.last("LIMIT 1");
         FundMarket fundMarket = baseMapper.selectOne(queryWrapper);
-        return fundMarket != null ? fundMarket.getSymbol() : null;
+        return fundMarket != null ? fundMarket.getCode() : null;
     }
 
     /**
@@ -73,7 +73,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
         OffsetDateTime endDateTime = end.plusDays(1).atStartOfDay(zone).toOffsetDateTime();
         
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundMarket::getSymbol, tsCode);
+        queryWrapper.eq(FundMarket::getCode, tsCode);
         queryWrapper.ge(FundMarket::getTime, startDateTime);
         queryWrapper.lt(FundMarket::getTime, endDateTime);
         queryWrapper.orderByAsc(FundMarket::getTime);
@@ -94,7 +94,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
         OffsetDateTime tradeDateEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
         
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundMarket::getSymbol, tsCode);
+        queryWrapper.eq(FundMarket::getCode, tsCode);
         queryWrapper.ge(FundMarket::getTime, tradeDateStart);
         queryWrapper.lt(FundMarket::getTime, tradeDateEnd);
         
@@ -111,7 +111,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
     public FundMarket getByTimeAndSymbol(OffsetDateTime time, String symbol) {
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(FundMarket::getTime, time);
-        queryWrapper.eq(FundMarket::getSymbol, symbol);
+        queryWrapper.eq(FundMarket::getCode, symbol);
         
         return baseMapper.selectOne(queryWrapper);
     }
@@ -123,10 +123,14 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
      */
     public int deleteBySymbol(String tsCode, String timeFrame) {
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundMarket::getSymbol, tsCode);
+        queryWrapper.eq(FundMarket::getCode, tsCode);
         queryWrapper.eq(FundMarket::getTimeFrame, timeFrame);
         
         return baseMapper.delete(queryWrapper);
+    }
+
+    public int deleteByCode(String code, String timeFrame) {
+        return deleteBySymbol(code, timeFrame);
     }
 
     /**
@@ -155,7 +159,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
         OffsetDateTime endDateTime = endDate.plusDays(1).atStartOfDay(zone).toOffsetDateTime();
         
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundMarket::getSymbol, tsCode);
+        queryWrapper.eq(FundMarket::getCode, tsCode);
         queryWrapper.ge(FundMarket::getTime, startDateTime);
         queryWrapper.lt(FundMarket::getTime, endDateTime);
         
@@ -167,7 +171,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
             return new ArrayList<>();
         }
         LambdaQueryWrapper<FundMarket> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(FundMarket::getSymbol, symbols);
+        queryWrapper.in(FundMarket::getCode, symbols);
         queryWrapper.ge(FundMarket::getTime, startDate.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
         queryWrapper.le(FundMarket::getTime, endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
         return baseMapper.selectList(queryWrapper);
@@ -177,7 +181,7 @@ public class FundMarketDao extends ServiceImpl<FundMarketMapper, FundMarket> {
         Page<FundMarket> page = new Page<>(q.getPageNo(), q.getPageSize());
         LambdaQueryWrapper<FundMarket> wrapper = new LambdaQueryWrapper<>();
         if (q.getCode() != null && !q.getCode().isEmpty()) {
-            wrapper.eq(FundMarket::getSymbol, q.getCode());
+            wrapper.eq(FundMarket::getCode, q.getCode());
         }
         if (q.getStartDate() != null) {
             wrapper.ge(FundMarket::getTime, q.getStartDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());

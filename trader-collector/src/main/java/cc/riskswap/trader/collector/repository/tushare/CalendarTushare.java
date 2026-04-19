@@ -17,7 +17,7 @@ import com.alibaba.fastjson2.JSONObject;
 
 import cc.riskswap.trader.collector.common.model.query.CalendarQuery;
 import cc.riskswap.trader.collector.common.util.DateUtil;
-import cc.riskswap.trader.collector.repository.entity.Calendar;
+import cc.riskswap.trader.base.dao.entity.Calendar;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 
 import cc.riskswap.trader.executor.common.enums.InvestmentStatusEnum;
 import cc.riskswap.trader.executor.common.model.dto.InvestmentInfoDto;
-import cc.riskswap.trader.executor.dao.InvestmentDao;
-import cc.riskswap.trader.executor.dao.entity.Investment;
 import cc.riskswap.trader.executor.lock.InvestmentLock;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -51,7 +51,7 @@ public class InvestmentService {
         if (investment == null) {
             return;
         }
-        Long investmentId = investment.getId();
+        Integer investmentId = investment.getId();
         investmentDao.updateStatusAndExecutorId(investmentId, InvestmentStatusEnum.RUNNING.code, executorId);
         log.info("Investment status updated to RUNNING: group={}, id={}", investment.getGroupName(), investmentId);
     }
@@ -63,7 +63,7 @@ public class InvestmentService {
         if (investment == null) {
             return;
         }
-        Long investmentId = investment.getId();
+        Integer investmentId = investment.getId();
         investmentDao.updateStatusAndExecutorId(investmentId, InvestmentStatusEnum.STOPPED.code, executorId);
         log.info("Investment status updated to STOPPED: group={}, id={}", investment.getGroupName(), investmentId);
     }
@@ -71,12 +71,12 @@ public class InvestmentService {
     /**
      * 删除任务
      */
-    public void deleteInvestment(Long investmentId) {
+    public void deleteInvestment(Integer investmentId) {
         investmentDao.removeById(investmentId);
         log.info("Investment deleted: id={}", investmentId);
     }
 
-    public void execute(Long investmentId) {
+    public void execute(Integer investmentId) {
         Investment investment = investmentDao.getById(investmentId);
         if (investment == null) {
             return;
@@ -84,7 +84,7 @@ public class InvestmentService {
         log.info("executing investment {}", investment.getGroupName());
     }
 
-    public void trigger(Long investmentId) {
+    public void trigger(Integer investmentId) {
         Investment investment = investmentDao.getById(investmentId);
         if (investment == null) {
             return;
@@ -92,7 +92,7 @@ public class InvestmentService {
         log.info("triggering investment {}", investment.getGroupName());
     }
 
-    public void init(Long investmentId) {
+    public void init(Integer investmentId) {
         Investment investment = investmentDao.getById(investmentId);
         if (investment == null) {
             return;

@@ -9,7 +9,7 @@ spring:
     active: dev
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: cc.riskswap.trader.statistic.dao.entity
+  type-aliases-package: cc.riskswap.trader.base.dao.entity
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false

@@ -1,12 +1,12 @@
 package cc.riskswap.trader.statistic.service;
 
-import cc.riskswap.trader.statistic.dao.CorrelationDao;
-import cc.riskswap.trader.statistic.dao.FundDao;
-import cc.riskswap.trader.statistic.dao.FundNavDao;
-import cc.riskswap.trader.statistic.dao.entity.Correlation;
-import cc.riskswap.trader.statistic.dao.entity.CorrelationDuplicateGroup;
-import cc.riskswap.trader.statistic.dao.entity.Fund;
-import cc.riskswap.trader.statistic.dao.entity.FundNav;
+import cc.riskswap.trader.base.dao.CorrelationDao;
+import cc.riskswap.trader.base.dao.FundDao;
+import cc.riskswap.trader.base.dao.FundNavDao;
+import cc.riskswap.trader.base.dao.entity.Correlation;
+import cc.riskswap.trader.base.dao.entity.CorrelationDuplicateGroup;
+import cc.riskswap.trader.base.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.FundNav;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;

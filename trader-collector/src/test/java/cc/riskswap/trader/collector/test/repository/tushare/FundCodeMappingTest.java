@@ -17,12 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import cc.riskswap.trader.collector.common.enums.ExchangeEnum;
-import cc.riskswap.trader.collector.repository.entity.Fund;
-import cc.riskswap.trader.collector.repository.entity.FundAdj;
-import cc.riskswap.trader.collector.repository.entity.FundMarket;
-import cc.riskswap.trader.collector.repository.entity.FundNav;
 import cc.riskswap.trader.collector.repository.tushare.FundTushare;
 import cc.riskswap.trader.collector.repository.tushare.TushareManager;
+import cc.riskswap.trader.base.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
+import cc.riskswap.trader.base.dao.entity.FundNav;
 
 class FundCodeMappingTest {
 

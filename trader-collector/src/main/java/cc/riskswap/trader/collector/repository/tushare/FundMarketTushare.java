@@ -19,7 +19,7 @@ import cc.riskswap.trader.collector.common.enums.TimeFrameEnum;
 import cc.riskswap.trader.collector.common.model.query.FundMarketQuery;
 import cc.riskswap.trader.collector.common.util.DateUtil;
 import cc.riskswap.trader.collector.common.util.NumberUtil;
-import cc.riskswap.trader.collector.repository.entity.FundMarket;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

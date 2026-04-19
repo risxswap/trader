@@ -1,11 +1,11 @@
 package cc.riskswap.trader.admin.test.stream;
 
-import cc.riskswap.trader.base.dao.base.NodeDao;
-import cc.riskswap.trader.base.dao.base.NodeMonitorDao;
-import cc.riskswap.trader.base.dao.base.SystemTaskDao;
-import cc.riskswap.trader.base.dao.base.TaskLogDao;
-import cc.riskswap.trader.base.dao.base.entity.SystemTask;
 import cc.riskswap.trader.admin.stream.TraderStreamConsumer;
+import cc.riskswap.trader.base.dao.NodeDao;
+import cc.riskswap.trader.base.dao.NodeMonitorDao;
+import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.dao.entity.SystemTask;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

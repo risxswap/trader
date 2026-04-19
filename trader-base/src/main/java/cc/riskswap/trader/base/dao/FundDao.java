@@ -26,7 +26,7 @@ public class FundDao extends ServiceImpl<FundMapper, Fund>{
      */
     public Fund getByCode(String code) {
         LambdaQueryWrapper<Fund> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Fund::getSymbol, code);
+        queryWrapper.eq(Fund::getCode, code);
         return baseMapper.selectOne(queryWrapper);
     }
     
@@ -40,12 +40,19 @@ public class FundDao extends ServiceImpl<FundMapper, Fund>{
         return baseMapper.selectList(queryWrapper);
     }
 
+    public List<Fund> listByMarket(String market) {
+        LambdaQueryWrapper<Fund> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Fund::getStatus, "L");
+        queryWrapper.eq(Fund::getMarket, market);
+        return baseMapper.selectList(queryWrapper);
+    }
+
     public Fund getOldestFund(Set<String> symbols) {
         if (CollectionUtil.isEmpty(symbols)) {
             return null;
         }
         LambdaQueryWrapper<Fund> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Fund::getSymbol, symbols);
+        queryWrapper.in(Fund::getCode, symbols);
         queryWrapper.orderByAsc(Fund::getFoundDate);
         queryWrapper.last("limit 1");
         return baseMapper.selectOne(queryWrapper);
@@ -56,7 +63,7 @@ public class FundDao extends ServiceImpl<FundMapper, Fund>{
      */
     public int deleteByCode(String code) {
         LambdaQueryWrapper<Fund> qw = new LambdaQueryWrapper<>();
-        qw.eq(Fund::getSymbol, code);
+        qw.eq(Fund::getCode, code);
         return this.getBaseMapper().delete(qw);
     }
 
@@ -65,7 +72,7 @@ public class FundDao extends ServiceImpl<FundMapper, Fund>{
         LambdaQueryWrapper<Fund> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Fund::getStatus, "L");
         if (q.getKeyword() != null && !q.getKeyword().isEmpty()) {
-            wrapper.and(w -> w.like(Fund::getSymbol, q.getKeyword()).or().like(Fund::getName, q.getKeyword()));
+            wrapper.and(w -> w.like(Fund::getCode, q.getKeyword()).or().like(Fund::getName, q.getKeyword()));
         }
         if (q.getMarket() != null && !q.getMarket().isEmpty()) {
             wrapper.eq(Fund::getMarket, q.getMarket());

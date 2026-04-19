@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import cc.riskswap.trader.collector.repository.entity.Fund;
 import cc.riskswap.trader.collector.repository.tushare.FundTushare;
+import cc.riskswap.trader.base.dao.entity.Fund;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest

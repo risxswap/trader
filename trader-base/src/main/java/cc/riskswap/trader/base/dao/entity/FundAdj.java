@@ -10,7 +10,7 @@ public class FundAdj {
     /**
      * 基金代码
      */
-    private String symbol;
+    private String code;
 
     /**
      * 日期

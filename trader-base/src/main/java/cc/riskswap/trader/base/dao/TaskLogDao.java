@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Repository;
 
-@Repository("adminTaskLogDao")
+@Repository
 public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
     public Page<TaskLog> pageQuery(TaskLogListQuery query) {
         Page<TaskLog> page = new Page<>(query.getPageNo(), query.getPageSize());
@@ -31,5 +31,28 @@ public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
         }
         wrapper.orderByDesc(TaskLog::getStartTime);
         return this.page(page, wrapper);
+    }
+
+    public void createRunningLog(String taskName, String taskGroup, java.time.LocalDateTime startTime, String traceId) {
+        TaskLog log = new TaskLog();
+        log.setTaskName(taskName);
+        log.setTaskGroup(taskGroup);
+        log.setStartTime(java.time.OffsetDateTime.of(startTime, java.time.ZoneOffset.UTC));
+        log.setTraceId(traceId);
+        log.setStatus("RUNNING");
+        this.save(log);
+    }
+
+    public void updateLogByTraceId(String traceId, String status, Long costMs, String remark) {
+        LambdaQueryWrapper<TaskLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TaskLog::getTraceId, traceId);
+        TaskLog log = this.getOne(wrapper, false);
+        if (log != null) {
+            log.setStatus(status);
+            log.setExecutionMs(costMs);
+            log.setRemark(remark);
+            log.setEndTime(java.time.OffsetDateTime.now());
+            this.updateById(log);
+        }
     }
 }

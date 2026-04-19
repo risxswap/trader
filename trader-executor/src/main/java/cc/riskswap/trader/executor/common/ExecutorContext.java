@@ -1,9 +1,9 @@
 package cc.riskswap.trader.executor.common;
 
-import cc.riskswap.trader.executor.dao.entity.Investment;
-import cc.riskswap.trader.executor.dao.entity.InvestmentLog;
-import cc.riskswap.trader.executor.dao.entity.InvestmentPosition;
-import cc.riskswap.trader.executor.dao.entity.InvestmentTrading;
+import cc.riskswap.trader.base.dao.entity.Investment;
+import cc.riskswap.trader.base.dao.entity.InvestmentLog;
+import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
+import cc.riskswap.trader.base.dao.entity.InvestmentTrading;
 
 import java.util.HashMap;
 import java.util.Map;

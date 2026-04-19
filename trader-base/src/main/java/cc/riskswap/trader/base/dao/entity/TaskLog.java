@@ -19,6 +19,7 @@ public class TaskLog {
     private OffsetDateTime endTime;
     private String status;
     private String content;
+    private String remark;
     private String errorMsg;
     private Long executionMs;
     private OffsetDateTime createdAt;

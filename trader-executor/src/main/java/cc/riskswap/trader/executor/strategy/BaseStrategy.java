@@ -18,14 +18,14 @@ import cc.riskswap.trader.executor.common.ExecutorContext;
 import cc.riskswap.trader.executor.common.enums.TradingStatusEnum;
 import cc.riskswap.trader.executor.common.model.dto.PositionStateDto;
 import cc.riskswap.trader.executor.common.model.param.TradingParam;
-import cc.riskswap.trader.executor.dao.InvestmentDao;
-import cc.riskswap.trader.executor.dao.InvestmentLogDao;
-import cc.riskswap.trader.executor.dao.InvestmentPositionDao;
-import cc.riskswap.trader.executor.dao.InvestmentTradingDao;
-import cc.riskswap.trader.executor.dao.entity.Investment;
-import cc.riskswap.trader.executor.dao.entity.InvestmentLog;
-import cc.riskswap.trader.executor.dao.entity.InvestmentPosition;
-import cc.riskswap.trader.executor.dao.entity.InvestmentTrading;
+import cc.riskswap.trader.base.dao.InvestmentDao;
+import cc.riskswap.trader.base.dao.InvestmentLogDao;
+import cc.riskswap.trader.base.dao.InvestmentPositionDao;
+import cc.riskswap.trader.base.dao.InvestmentTradingDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
+import cc.riskswap.trader.base.dao.entity.InvestmentLog;
+import cc.riskswap.trader.base.dao.entity.InvestmentPosition;
+import cc.riskswap.trader.base.dao.entity.InvestmentTrading;
 import cc.riskswap.trader.executor.pubsub.publisher.InvestmentLogPublisher;
 import cc.riskswap.trader.base.strategy.config.BaseStrategyConfig;
 import cn.hutool.json.JSONUtil;
@@ -90,7 +90,7 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
     /**
      * 初始化上下文
      */
-    private void initContext(Long investmentId) {
+    private void initContext(Integer investmentId) {
         Investment investment = investmentDao.getById(investmentId);
         this.context.setInvestment(investment);
         // 设置策略参数
@@ -141,7 +141,7 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
             return;
         }
 
-        Long investmentId = investment.getId();
+        Integer investmentId = investment.getId();
         BigDecimal budget = investment.getBudget() != null ? investment.getBudget() : BigDecimal.ZERO;
         BigDecimal baseCash = getBaseCash(investmentId, budget);
 
@@ -170,7 +170,7 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
         return investment;
     }
 
-    private BigDecimal getBaseCash(Long investmentId, BigDecimal budget) {
+    private BigDecimal getBaseCash(Integer investmentId, BigDecimal budget) {
         InvestmentLog latestLog = investmentLogDao.getLatestByInvestmentId(investmentId);
         if (latestLog != null && latestLog.getCash() != null) {
             return latestLog.getCash();
@@ -178,7 +178,7 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
         return budget;
     }
 
-    private TradeData prepareTradeData(List<TradingParam> traddings, Long investmentId, BigDecimal baseCash) {
+    private TradeData prepareTradeData(List<TradingParam> traddings, Integer investmentId, BigDecimal baseCash) {
         BigDecimal cash = baseCash;
         Map<String, PositionStateDto> initialStates = new HashMap<>();
         Map<String, BigDecimal> lastPriceMap = new HashMap<>();
@@ -215,8 +215,8 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
         return new TradeData(cash, initialStates, lastPriceMap);
     }
 
-    private InvestmentLog saveInitialLog(Long investmentId, BigDecimal cash) {
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+    private InvestmentLog saveInitialLog(Integer investmentId, BigDecimal cash) {
+        OffsetDateTime now = OffsetDateTime.now();
         InvestmentLog logEntity = new InvestmentLog();
         logEntity.setInvestmentId(investmentId);
         logEntity.setRecordDate(now);
@@ -231,10 +231,10 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
         return logEntity;
     }
 
-    private Map<String, PositionStateDto> processTrades(List<TradingParam> traddings, Long investmentId, Long investmentLogId, Map<String, PositionStateDto> initialStates) {
+    private Map<String, PositionStateDto> processTrades(List<TradingParam> traddings, Integer investmentId, Integer investmentLogId, Map<String, PositionStateDto> initialStates) {
         Map<String, PositionStateDto> states = new HashMap<>(initialStates.size());
         List<InvestmentTrading> tradingList = new ArrayList<>();
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now();
 
         for (TradingParam param : traddings) {
             if (!isValid(param)) {
@@ -255,7 +255,7 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
         return states;
     }
 
-    private InvestmentTrading createTradingRecord(TradingParam param, Long investmentId, Long investmentLogId, java.time.LocalDateTime now) {
+    private InvestmentTrading createTradingRecord(TradingParam param, Integer investmentId, Integer investmentLogId, OffsetDateTime now) {
         InvestmentTrading trading = new InvestmentTrading();
         trading.setInvestmentId(investmentId);
         trading.setInvestmentLogId(investmentLogId);
@@ -283,8 +283,8 @@ public abstract class BaseStrategy<T extends BaseStrategyConfig> implements Stra
             asset = asset.add(state.getNetQuantity().multiply(lastPrice));
         }
         logEntity.setAsset(asset);
-        // Note: Profit logic might be moved elsewhere or we can just ignore setting it since entity has no profit field
-        logEntity.setUpdatedAt(java.time.LocalDateTime.now());
+        logEntity.setProfit(logEntity.getCash() == null ? null : logEntity.getCash().add(asset).subtract(budget));
+        logEntity.setUpdatedAt(OffsetDateTime.now());
         investmentLogDao.updateById(logEntity);
     }
 

@@ -7,7 +7,7 @@ import com.alibaba.fastjson2.JSONObject;
 import cc.riskswap.trader.collector.common.model.query.FundNavQuery;
 import cc.riskswap.trader.collector.common.util.DateUtil;
 import cc.riskswap.trader.collector.common.util.NumberUtil;
-import cc.riskswap.trader.collector.repository.entity.FundNav;
+import cc.riskswap.trader.base.dao.entity.FundNav;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;

@@ -16,7 +16,7 @@ public class FundMarket {
     /**
      * TS代码
      */
-    private String symbol;
+    private String code;
     
     /**
      * 交易日期

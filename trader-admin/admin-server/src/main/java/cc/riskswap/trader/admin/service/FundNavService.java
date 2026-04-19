@@ -43,7 +43,7 @@ public class FundNavService {
         TreeMap<LocalDate, BigDecimal> adjMap = new TreeMap<>();
         if (StrUtil.isNotBlank(q.getCode())) {
             List<FundAdj> adjs = fundAdjDao.lambdaQuery()
-                    .eq(FundAdj::getSymbol, q.getCode())
+                    .eq(FundAdj::getCode, q.getCode())
                     .orderByAsc(FundAdj::getTime)
                     .list();
             for (FundAdj adj : adjs) {

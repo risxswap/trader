@@ -15,7 +15,7 @@ import com.alibaba.fastjson2.JSONObject;
 
 import cc.riskswap.trader.collector.common.enums.ExchangeEnum;
 import cc.riskswap.trader.collector.common.util.NumberUtil;
-import cc.riskswap.trader.collector.repository.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.Fund;
 
 @Component
 public class FundTushare {

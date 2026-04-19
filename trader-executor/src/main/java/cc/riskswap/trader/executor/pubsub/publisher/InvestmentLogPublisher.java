@@ -19,10 +19,10 @@ public class InvestmentLogPublisher extends BasePublisher<InvestmentLogMessage> 
         return CHANNEL;
     }
 
-    public void create(Long id) {
+    public void create(Integer id) {
         InvestmentLogMessage message = new InvestmentLogMessage();
         message.setType(MessageTypeEnum.CREATE.code);
-        message.setId(id);
+        message.setId(id == null ? null : id.longValue());
         publish(message);
     }
 }

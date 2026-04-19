@@ -26,15 +26,9 @@ public class FundAdjDao extends ServiceImpl<FundAdjMapper, FundAdj> {
         return fundAdj != null ? fundAdj.getTime() : null;
     }
 
-    public void deleteBySymbol(String symbol) {
-        LambdaQueryWrapper<FundAdj> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FundAdj::getSymbol, symbol);
-        this.remove(wrapper);
-    }
-
     public int deleteByCode(String code) {
         LambdaQueryWrapper<FundAdj> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundAdj::getSymbol, code);
+        queryWrapper.eq(FundAdj::getCode, code);
         return baseMapper.delete(queryWrapper);
     }
 
@@ -53,7 +47,7 @@ public class FundAdjDao extends ServiceImpl<FundAdjMapper, FundAdj> {
         OffsetDateTime endDateTime = end.plusDays(1).atStartOfDay(zone).toOffsetDateTime();
         
         LambdaQueryWrapper<FundAdj> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FundAdj::getSymbol, code);
+        queryWrapper.eq(FundAdj::getCode, code);
         queryWrapper.ge(FundAdj::getTime, startDateTime);
         queryWrapper.lt(FundAdj::getTime, endDateTime);
         queryWrapper.orderByAsc(FundAdj::getTime);
@@ -64,7 +58,7 @@ public class FundAdjDao extends ServiceImpl<FundAdjMapper, FundAdj> {
         Page<FundAdj> page = new Page<>(q.getPageNo(), q.getPageSize());
         LambdaQueryWrapper<FundAdj> wrapper = new LambdaQueryWrapper<>();
         if (q.getCode() != null && !q.getCode().isEmpty()) {
-            wrapper.eq(FundAdj::getSymbol, q.getCode());
+            wrapper.eq(FundAdj::getCode, q.getCode());
         }
         if (q.getStartDate() != null) {
             wrapper.ge(FundAdj::getTime, q.getStartDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
@@ -76,4 +70,3 @@ public class FundAdjDao extends ServiceImpl<FundAdjMapper, FundAdj> {
         return this.page(page, wrapper);
     }
 }
-

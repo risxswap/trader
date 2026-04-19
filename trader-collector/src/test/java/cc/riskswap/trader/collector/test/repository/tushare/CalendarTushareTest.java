@@ -7,8 +7,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.alibaba.fastjson2.JSON;
 
 import cc.riskswap.trader.collector.common.model.query.CalendarQuery;
-import cc.riskswap.trader.collector.repository.entity.Calendar;
 import cc.riskswap.trader.collector.repository.tushare.CalendarTushare;
+import cc.riskswap.trader.base.dao.entity.Calendar;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,4 +34,3 @@ public class CalendarTushareTest {
         log.info("calendar size: {}", calendars.size());
     }
 }
-

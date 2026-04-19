@@ -17,7 +17,7 @@ import com.alibaba.fastjson2.JSONObject;
 
 import cc.riskswap.trader.collector.common.model.query.FundAdjQuery;
 import cc.riskswap.trader.collector.common.util.DateUtil;
-import cc.riskswap.trader.collector.repository.entity.FundAdj;
+import cc.riskswap.trader.base.dao.entity.FundAdj;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

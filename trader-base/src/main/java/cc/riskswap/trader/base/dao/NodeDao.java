@@ -2,15 +2,26 @@ package cc.riskswap.trader.base.dao;
 
 import cc.riskswap.trader.base.dao.entity.Node;
 import cc.riskswap.trader.base.dao.mapper.NodeMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository("adminNodeDao")
+@Repository
 public class NodeDao extends ServiceImpl<NodeMapper, Node> {
+    public Node getByNodeId(String nodeId) {
+        LambdaQueryWrapper<Node> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Node::getNodeId, nodeId).last("limit 1");
+        return getOne(wrapper, false);
+    }
+
     public List<Node> listAll() {
-        return this.list();
+        LambdaQueryWrapper<Node> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(Node::getNodeGroupId)
+                .orderByDesc(Node::getUpdatedAt)
+                .orderByAsc(Node::getNodeId);
+        return list(wrapper);
     }
 
     public long countByNodeGroupId(Long nodeGroupId) {

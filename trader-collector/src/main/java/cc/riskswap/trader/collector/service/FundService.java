@@ -20,10 +20,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import cc.riskswap.trader.collector.common.util.TaskContentContext;
-import cc.riskswap.trader.collector.repository.dao.FundDao;
-import cc.riskswap.trader.collector.repository.entity.Fund;
-import cc.riskswap.trader.collector.repository.entity.FundMarket;
 import cc.riskswap.trader.collector.repository.tushare.FundTushare;
+import cc.riskswap.trader.base.dao.FundDao;
+import cc.riskswap.trader.base.dao.entity.Fund;
+import cc.riskswap.trader.base.dao.entity.FundMarket;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 

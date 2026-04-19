@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.common.enums.ImportLogTypeEnum;
-import cc.riskswap.trader.collector.repository.dao.ImportLogDao;
-import cc.riskswap.trader.collector.repository.entity.ImportLog;
+import cc.riskswap.trader.base.dao.ImportLogDao;
+import cc.riskswap.trader.base.dao.entity.ImportLog;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest

@@ -11,9 +11,9 @@ import com.google.common.collect.Lists;
 import cc.riskswap.trader.collector.common.enums.ExchangeEnum;
 import cc.riskswap.trader.collector.common.model.query.CalendarQuery;
 import cc.riskswap.trader.collector.common.util.TaskContentContext;
-import cc.riskswap.trader.collector.repository.dao.CalendarDao;
-import cc.riskswap.trader.collector.repository.entity.Calendar;
 import cc.riskswap.trader.collector.repository.tushare.CalendarTushare;
+import cc.riskswap.trader.base.dao.CalendarDao;
+import cc.riskswap.trader.base.dao.entity.Calendar;
 import lombok.extern.slf4j.Slf4j;
 
 @Service

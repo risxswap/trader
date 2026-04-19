@@ -1,12 +1,12 @@
 package cc.riskswap.trader.admin.stream;
 
-import cc.riskswap.trader.base.dao.base.NodeDao;
-import cc.riskswap.trader.base.dao.base.NodeMonitorDao;
-import cc.riskswap.trader.base.dao.base.SystemTaskDao;
-import cc.riskswap.trader.base.dao.base.TaskLogDao;
-import cc.riskswap.trader.base.dao.base.entity.Node;
-import cc.riskswap.trader.base.dao.base.entity.NodeMonitor;
-import cc.riskswap.trader.base.dao.base.entity.SystemTask;
+import cc.riskswap.trader.base.dao.NodeDao;
+import cc.riskswap.trader.base.dao.NodeMonitorDao;
+import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.dao.entity.Node;
+import cc.riskswap.trader.base.dao.entity.NodeMonitor;
+import cc.riskswap.trader.base.dao.entity.SystemTask;
 import cc.riskswap.trader.base.event.NodeMonitorEvent;
 import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
 import cc.riskswap.trader.base.event.TaskLogEvent;
@@ -83,7 +83,8 @@ public class TraderStreamConsumer implements StreamListener<String, MapRecord<St
 
         NodeMonitor monitor = new NodeMonitor();
         monitor.setNodeId(event.getNodeId());
-        monitor.setStatus(event.getStatus());
+        monitor.setNodeType(event.getNodeType());
+        monitor.setNodeName(event.getAppName());
         monitor.setTimestamp(OffsetDateTime.ofInstant(java.time.Instant.ofEpochMilli(event.getTimestamp()), ZoneOffset.UTC));
         nodeMonitorDao.save(monitor);
     }

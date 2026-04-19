@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.common.model.query.FundNavQuery;
-import cc.riskswap.trader.collector.repository.entity.FundNav;
 import cc.riskswap.trader.collector.repository.tushare.FundNavTushare;
+import cc.riskswap.trader.base.dao.entity.FundNav;
 
 import java.util.List;
 

@@ -17,11 +17,11 @@ import java.util.List;
 public class FundCodeNamingTest {
 
     @Test
-    void shouldUseSymbolFieldInBaseEntitiesAndCodeFieldInAdminModels() {
-        assertHasSymbolFieldAndNoCodeField(Fund.class);
-        assertHasSymbolFieldAndNoCodeField(FundAdj.class);
-        assertHasSymbolFieldAndNoCodeField(FundMarket.class);
-        assertHasSymbolFieldAndNoCodeField(FundNav.class);
+    void shouldUseCodeFieldInBaseEntitiesAndAdminModels() {
+        assertHasCodeFieldAndNoSymbolField(Fund.class);
+        assertHasCodeFieldAndNoSymbolField(FundAdj.class);
+        assertHasCodeFieldAndNoSymbolField(FundMarket.class);
+        assertHasCodeFieldAndNoSymbolField(FundNav.class);
         assertHasCodeField(FundDto.class);
         assertHasCodeField(FundNavDto.class);
         assertHasCodeField(FundNavListQuery.class);
@@ -33,7 +33,7 @@ public class FundCodeNamingTest {
         String clickHouseScript = new ClassPathResource("db/clickhouse.sql").getContentAsString(StandardCharsets.UTF_8);
 
         List<String> expectedSnippets = List.of(
-                "CREATE TABLE IF NOT EXISTS fund (\n  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',\n  code VARCHAR(32) NOT NULL COMMENT '基金代码'",
+                "CREATE TABLE IF NOT EXISTS fund (\n  id INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',\n  code VARCHAR(32) NOT NULL COMMENT '基金代码'",
                 "UNIQUE KEY fund_code_uidx (code)",
                 "CREATE TABLE IF NOT EXISTS fund_adj (\n  code String COMMENT '基金代码'",
                 "ORDER BY (code, time);",
@@ -51,9 +51,9 @@ public class FundCodeNamingTest {
         Assertions.assertFalse(clickHouseScript.contains("symbol String COMMENT '基金代码'"));
     }
 
-    private void assertHasSymbolFieldAndNoCodeField(Class<?> type) {
-        Assertions.assertDoesNotThrow(() -> type.getDeclaredField("symbol"));
-        Assertions.assertThrows(NoSuchFieldException.class, () -> type.getDeclaredField("code"));
+    private void assertHasCodeFieldAndNoSymbolField(Class<?> type) {
+        Assertions.assertDoesNotThrow(() -> type.getDeclaredField("code"));
+        Assertions.assertThrows(NoSuchFieldException.class, () -> type.getDeclaredField("symbol"));
     }
 
     private void assertHasCodeField(Class<?> type) {

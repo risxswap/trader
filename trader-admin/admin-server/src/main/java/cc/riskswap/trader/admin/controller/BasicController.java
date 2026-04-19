@@ -72,12 +72,12 @@ public class BasicController {
                             ("FUND".equalsIgnoreCase(type) && !"ETF".equalsIgnoreCase(f.getType()));
                     if (!typeMatch) return false;
                     if (StrUtil.isBlank(keyword)) return true;
-                    return StrUtil.containsIgnoreCase(f.getSymbol(), keyword) || StrUtil.containsIgnoreCase(f.getName(), keyword);
+                    return StrUtil.containsIgnoreCase(f.getCode(), keyword) || StrUtil.containsIgnoreCase(f.getName(), keyword);
                 })
                 .limit(50)
                 .map(f -> {
                     java.util.HashMap<String, String> m = new java.util.HashMap<>();
-                    String code = f.getSymbol();
+                    String code = f.getCode();
                     String nm = f.getName();
                     m.put("value", code);
                     m.put("label", (code != null ? code : "") + " - " + (nm != null ? nm : ""));

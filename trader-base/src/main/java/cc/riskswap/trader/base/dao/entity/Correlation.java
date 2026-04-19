@@ -18,28 +18,28 @@ public class Correlation {
     /**
      * 主键ID
      */
-    @TableId(type = IdType.AUTO)
-    private Integer id;
+    @TableId(type = IdType.INPUT)
+    private Long id;
 
     /**
      * 标的
      */
-    private String symbol1;
+    private String asset1;
 
     /**
      * 标的类型
      */
-    private String symbol1Type;
+    private String asset1Type;
 
     /**
      * 相关标的
      */
-    private String symbol2;
+    private String asset2;
 
     /**
      * 相关标的类型
      */
-    private String symbol2Type;
+    private String asset2Type;
 
     /**
      * 相关系数

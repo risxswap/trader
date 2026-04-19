@@ -22,7 +22,7 @@ public class FundNavDao extends ServiceImpl<FundNavMapper, FundNav> {
         Page<FundNav> page = new Page<>(q.getPageNo(), q.getPageSize());
         LambdaQueryWrapper<FundNav> wrapper = new LambdaQueryWrapper<>();
         if (StrUtil.isNotBlank(q.getCode())) {
-            wrapper.eq(FundNav::getSymbol, q.getCode());
+            wrapper.eq(FundNav::getCode, q.getCode());
         }
         if (q.getStartTime() != null) {
             wrapper.ge(FundNav::getTime, q.getStartTime().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
@@ -34,9 +34,9 @@ public class FundNavDao extends ServiceImpl<FundNavMapper, FundNav> {
         return this.page(page, wrapper);
     }
 
-    public List<FundNav> listBySymbolAndStartTime(String symbol, OffsetDateTime startTime) {
+    public List<FundNav> listByCodeAndStartTime(String code, OffsetDateTime startTime) {
         LambdaQueryWrapper<FundNav> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FundNav::getSymbol, symbol);
+        wrapper.eq(FundNav::getCode, code);
         wrapper.ge(FundNav::getTime, startTime);
         wrapper.orderByAsc(FundNav::getTime);
         return this.list(wrapper);
@@ -56,9 +56,9 @@ public class FundNavDao extends ServiceImpl<FundNavMapper, FundNav> {
         this.remove(wrapper);
     }
 
-    public void deleteBySymbol(String symbol) {
+    public void deleteByCode(String code) {
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FundNav> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
-        wrapper.eq(FundNav::getSymbol, symbol);
+        wrapper.eq(FundNav::getCode, code);
         this.remove(wrapper);
     }
 }

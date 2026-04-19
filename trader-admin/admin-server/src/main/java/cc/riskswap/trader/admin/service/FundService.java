@@ -62,7 +62,7 @@ public class FundService {
         List<Fund> fundList = fundDao.listAll();
         Map<String, Map<LocalDate, Double>> fundDailyReturns = new HashMap<>();
         for (Fund fund : fundList) {
-            String code = fund.getSymbol();
+            String code = fund.getCode();
             List<FundMarket> markets = fundMarketService.getData(code, startDate, endDate);
             if (CollectionUtil.isEmpty(markets)) {
                 continue;
@@ -129,7 +129,7 @@ public class FundService {
         Page<Fund> r = fundDao.pageQuery(fundListQuery);
         List<FundDto> items = r.getRecords().stream().map(f -> {
             FundDto d = new FundDto();
-            d.setCode(f.getSymbol());
+            d.setCode(f.getCode());
             d.setName(f.getName());
             d.setStatus(f.getStatus());
             d.setMarket(f.getMarket());
@@ -163,7 +163,7 @@ public class FundService {
             return null;
         }
         FundDto d = new FundDto();
-        d.setCode(f.getSymbol());
+        d.setCode(f.getCode());
         d.setName(f.getName());
         d.setStatus(f.getStatus());
         d.setMarket(f.getMarket());
@@ -185,7 +185,7 @@ public class FundService {
      */
     public boolean updateFundBasic(String code, FundUpdateParam p) {
         com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Fund> uw = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
-        uw.eq(Fund::getSymbol, code);
+        uw.eq(Fund::getCode, code);
         if (p.getName() != null) uw.set(Fund::getName, p.getName());
         if (p.getStatus() != null) uw.set(Fund::getStatus, p.getStatus());
         if (p.getMarket() != null) uw.set(Fund::getMarket, p.getMarket());
@@ -216,7 +216,7 @@ public class FundService {
         return data.stream().map(m -> {
             FundMarketDto d = new FundMarketDto();
             d.setTime(m.getTime());
-            d.setCode(m.getSymbol());
+            d.setCode(m.getCode());
             d.setUpdatedAt(m.getUpdatedAt());
             d.setOpen(m.getOpen());
             d.setHigh(m.getHigh());
@@ -236,7 +236,7 @@ public class FundService {
         return adjs.stream().map(a -> {
             FundAdjDto d = new FundAdjDto();
             d.setTime(a.getTime());
-            d.setCode(a.getSymbol());
+            d.setCode(a.getCode());
             d.setUpdatedAt(a.getUpdatedAt());
             d.setAdjFactor(a.getAdjFactor());
             return d;
@@ -260,7 +260,7 @@ public class FundService {
         List<FundMarketDto> items = r.getRecords().stream().map(m -> {
             FundMarketDto d = new FundMarketDto();
             d.setTime(m.getTime());
-            d.setCode(m.getSymbol());
+            d.setCode(m.getCode());
             d.setUpdatedAt(m.getUpdatedAt());
             d.setOpen(m.getOpen());
             d.setHigh(m.getHigh());
@@ -288,7 +288,7 @@ public class FundService {
         List<FundAdjDto> items = r.getRecords().stream().map(a -> {
             FundAdjDto d = new FundAdjDto();
             d.setTime(a.getTime());
-            d.setCode(a.getSymbol());
+            d.setCode(a.getCode());
             d.setUpdatedAt(a.getUpdatedAt());
             d.setAdjFactor(a.getAdjFactor());
             return d;
