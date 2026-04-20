@@ -24,6 +24,7 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 public class SystemTaskServiceTest {
 
@@ -220,6 +221,85 @@ public class SystemTaskServiceTest {
         Assertions.assertEquals("任务实例已存在", warning.getMessage());
         Mockito.verify(systemTaskDao, Mockito.never()).save(Mockito.any());
         Mockito.verifyNoInteractions(refreshPublisher);
+    }
+
+    @Test
+    void should_generate_instance_task_code_for_strategy_task_creation() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        String json = "{\"taskType\":\"STRATEGY\",\"taskCode\":\"relativeStrength\",\"taskName\":\"相对强弱策略\",\"defaultCron\":\"0 0/1 * * * ?\",\"defaultEnabled\":true}";
+        Mockito.when(ops.get("trader:task:def:STRATEGY:relativeStrength")).thenReturn(json);
+
+        SystemTaskInstanceCreateParam param = new SystemTaskInstanceCreateParam();
+        param.setTaskType("STRATEGY");
+        param.setTaskCode("relativeStrength");
+        param.setTaskName("相对强弱策略实例");
+        param.setCron("0 15 9 * * ?");
+        param.setStatus("STOPPED");
+
+        systemTaskService.createInstance(param);
+
+        ArgumentCaptor<SystemTask> taskCaptor = ArgumentCaptor.forClass(SystemTask.class);
+        Mockito.verify(systemTaskDao).save(taskCaptor.capture());
+        SystemTask savedTask = taskCaptor.getValue();
+        Assertions.assertTrue(savedTask.getTaskCode().startsWith("relativeStrength#"));
+        Assertions.assertNotEquals("relativeStrength", savedTask.getTaskCode());
+
+        ArgumentCaptor<TraderTaskRefreshMessage> messageCaptor = ArgumentCaptor.forClass(TraderTaskRefreshMessage.class);
+        Mockito.verify(refreshPublisher).publish(messageCaptor.capture());
+        Assertions.assertEquals(savedTask.getTaskCode(), messageCaptor.getValue().taskCode());
+        Mockito.verify(hashOperations).put(Mockito.eq("trader:task:instances:STRATEGY"), Mockito.eq(savedTask.getTaskCode()), Mockito.anyString());
+    }
+
+    @Test
+    void should_create_distinct_instance_codes_for_repeated_strategy_creation() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        String json = "{\"taskType\":\"STRATEGY\",\"taskCode\":\"relativeStrength\",\"taskName\":\"相对强弱策略\",\"defaultCron\":\"0 0/1 * * * ?\",\"defaultEnabled\":true}";
+        Mockito.when(ops.get("trader:task:def:STRATEGY:relativeStrength")).thenReturn(json);
+
+        SystemTaskInstanceCreateParam param = new SystemTaskInstanceCreateParam();
+        param.setTaskType("STRATEGY");
+        param.setTaskCode("relativeStrength");
+        param.setTaskName("相对强弱策略实例");
+        param.setCron("0 15 9 * * ?");
+        param.setStatus("STOPPED");
+
+        systemTaskService.createInstance(param);
+        systemTaskService.createInstance(param);
+
+        ArgumentCaptor<SystemTask> taskCaptor = ArgumentCaptor.forClass(SystemTask.class);
+        Mockito.verify(systemTaskDao, Mockito.times(2)).save(taskCaptor.capture());
+        List<SystemTask> savedTasks = taskCaptor.getAllValues();
+        Assertions.assertEquals(2, savedTasks.size());
+        Assertions.assertNotEquals(savedTasks.get(0).getTaskCode(), savedTasks.get(1).getTaskCode());
+        Assertions.assertTrue(savedTasks.stream().allMatch(task -> task.getTaskCode().startsWith("relativeStrength#")));
+
+        ArgumentCaptor<Object> fieldCaptor = ArgumentCaptor.forClass(Object.class);
+        Mockito.verify(hashOperations, Mockito.times(2))
+                .put(Mockito.eq("trader:task:instances:STRATEGY"), fieldCaptor.capture(), Mockito.anyString());
+        Assertions.assertEquals(2, Set.copyOf(fieldCaptor.getAllValues()).size());
+
+        ArgumentCaptor<TraderTaskRefreshMessage> messageCaptor = ArgumentCaptor.forClass(TraderTaskRefreshMessage.class);
+        Mockito.verify(refreshPublisher, Mockito.times(2)).publish(messageCaptor.capture());
+        List<TraderTaskRefreshMessage> messages = messageCaptor.getAllValues();
+        Assertions.assertNotEquals(messages.get(0).taskCode(), messages.get(1).taskCode());
     }
 
     @Test

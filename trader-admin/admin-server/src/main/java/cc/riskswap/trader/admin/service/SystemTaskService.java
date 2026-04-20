@@ -107,22 +107,28 @@ public class SystemTaskService {
     }
 
     public void createInstance(SystemTaskInstanceCreateParam param) {
-        String key = "trader:task:def:" + param.getTaskType() + ":" + param.getTaskCode();
+        String definitionTaskCode = param.getTaskCode();
+        String key = "trader:task:def:" + param.getTaskType() + ":" + definitionTaskCode;
         String json = stringRedisTemplate.opsForValue().get(key);
         if (StrUtil.isBlank(json)) {
             throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "任务定义不存在");
         }
         TaskDefinitionDto def = JSONUtil.toBean(json, TaskDefinitionDto.class);
 
-        SystemTask existing = systemTaskDao.getByAppNameAndTaskCode(param.getTaskType(), param.getTaskCode());
-        if (existing != null) {
-            throw new Warning(ErrorCode.PARAM_INVALID.code(), "任务实例已存在");
+        String instanceTaskCode = definitionTaskCode;
+        if (!allowDuplicateInstance(param.getTaskType())) {
+            SystemTask existing = systemTaskDao.getByAppNameAndTaskCode(param.getTaskType(), definitionTaskCode);
+            if (existing != null) {
+                throw new Warning(ErrorCode.PARAM_INVALID.code(), "任务实例已存在");
+            }
+        } else {
+            instanceTaskCode = generateUniqueInstanceTaskCode(param.getTaskType(), definitionTaskCode);
         }
 
         SystemTask task = new SystemTask();
         task.setAppName(param.getTaskType());
         task.setTaskType(param.getTaskType());
-        task.setTaskCode(param.getTaskCode());
+        task.setTaskCode(instanceTaskCode);
         task.setTaskName(param.getTaskName());
         task.setCron(param.getCron());
         task.setEnabled(param.getEnabled() != null ? param.getEnabled() : def.getDefaultEnabled());
@@ -135,6 +141,22 @@ public class SystemTaskService {
         systemTaskDao.save(task);
 
         publishRefresh(task, "TASK_CREATED");
+    }
+
+    private boolean allowDuplicateInstance(String taskType) {
+        return "STRATEGY".equals(taskType);
+    }
+
+    private String generateUniqueInstanceTaskCode(String taskType, String definitionTaskCode) {
+        String candidate = generateInstanceTaskCode(definitionTaskCode);
+        while (systemTaskDao.getByAppNameAndTaskCode(taskType, candidate) != null) {
+            candidate = generateInstanceTaskCode(definitionTaskCode);
+        }
+        return candidate;
+    }
+
+    private String generateInstanceTaskCode(String definitionTaskCode) {
+        return definitionTaskCode + "#" + System.currentTimeMillis() + "-" + Math.abs(System.nanoTime() % 1_000_000L);
     }
 
     public void deleteInstance(SystemTaskInstanceDeleteParam param) {
