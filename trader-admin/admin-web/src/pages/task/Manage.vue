@@ -204,17 +204,18 @@
               class="create-filter__task-select"
               :loading="loadingDef">
               <el-option
-                v-for="item in definitions"
+                v-for="item in createDefinitionOptions"
                 :key="`${item.taskType}::${item.taskCode}`"
-                :label="`${item.taskName || item.taskCode}（${item.taskType}/${item.taskCode}）`"
-                :value="`${item.taskType}::${item.taskCode}`" />
+                :label="item.optionLabel"
+                :value="`${item.taskType}::${item.taskCode}`"
+                :disabled="item.disabled" />
             </el-select>
           </el-form-item>
           <el-form-item label="任务类型">
-            <el-input :model-value="selectedDefinition?.taskType || '-'" disabled />
+            <el-input :model-value="selectedCreateDefinition?.taskType || '-'" disabled />
           </el-form-item>
           <el-form-item label="任务编码">
-            <el-input :model-value="selectedDefinition?.taskCode || '-'" disabled />
+            <el-input :model-value="selectedCreateDefinition?.taskCode || '-'" disabled />
           </el-form-item>
           <el-form-item label="任务名称">
             <el-input v-model="createForm.taskName" placeholder="请输入任务名称" />
@@ -234,7 +235,7 @@
           </el-form-item>
           <el-form-item label="参数 Schema">
             <el-input
-              :model-value="selectedDefinition?.paramSchema || '-'"
+              :model-value="selectedCreateDefinition?.paramSchema || '-'"
               type="textarea"
               :autosize="{ minRows: 4, maxRows: 10 }"
               disabled />
@@ -289,6 +290,12 @@ const tableData = ref<SystemTaskDto[]>([])
 const definitions = ref<TaskDefinitionDto[]>([])
 const total = ref(0)
 
+type CreateTaskDefinitionOption = TaskDefinitionDto & {
+  disabled: boolean
+  disabledReason?: string
+  optionLabel: string
+}
+
 const query = reactive<SystemTaskQuery>({
   pageNo: 1,
   pageSize: 10,
@@ -326,10 +333,28 @@ const totalPage = computed(() => {
   return Math.ceil(total.value / query.pageSize)
 })
 
-const selectedDefinition = computed(() => {
+const createDefinitionOptions = computed<CreateTaskDefinitionOption[]>(() => {
+  const existingTaskKeys = new Set(tableData.value.map((item) => `${item.taskType}::${item.taskCode}`))
+  return definitions.value
+    .filter((item) => item.taskType !== 'STRATEGY')
+    .map((item) => {
+      const disabled = existingTaskKeys.has(`${item.taskType}::${item.taskCode}`)
+      const disabledReason = disabled ? '已创建' : undefined
+      return {
+        ...item,
+        disabled,
+        disabledReason,
+        optionLabel: disabled
+          ? `${item.taskName || item.taskCode}（${item.taskType}/${item.taskCode}，${disabledReason}）`
+          : `${item.taskName || item.taskCode}（${item.taskType}/${item.taskCode}）`
+      }
+    })
+})
+
+const selectedCreateDefinition = computed(() => {
   if (!createForm.taskRef) return null
   const [taskType, taskCode] = createForm.taskRef.split('::')
-  return definitions.value.find((item) => item.taskType === taskType && item.taskCode === taskCode) || null
+  return createDefinitionOptions.value.find((item) => item.taskType === taskType && item.taskCode === taskCode) || null
 })
 
 const loadData = async () => {
@@ -473,8 +498,7 @@ const formatTime = (value?: string) => {
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
 }
 
-const openCreateDialog = async () => {
-  createVisible.value = true
+const resetCreateForm = () => {
   createForm.taskRef = ''
   createForm.taskName = ''
   createForm.cron = DEFAULT_CREATE_CRON
@@ -482,6 +506,9 @@ const openCreateDialog = async () => {
   createForm.status = 'STOPPED'
   createForm.paramsJson = ''
   createForm.remark = ''
+}
+
+const loadDefinitions = async () => {
   loadingDef.value = true
   try {
     const res = await listTaskDefinitions({})
@@ -497,10 +524,16 @@ const openCreateDialog = async () => {
   }
 }
 
+const openCreateDialog = async () => {
+  createVisible.value = true
+  resetCreateForm()
+  await loadDefinitions()
+}
+
 watch(
   () => createForm.taskRef,
   () => {
-    const target = selectedDefinition.value
+    const target = selectedCreateDefinition.value
     if (!target) return
     createForm.taskName = target.taskName || target.taskCode
     createForm.cron = target.defaultCron || DEFAULT_CREATE_CRON
@@ -510,9 +543,24 @@ watch(
   }
 )
 
+watch(
+  createDefinitionOptions,
+  (options) => {
+    if (!createForm.taskRef) return
+    const current = options.find((item) => `${item.taskType}::${item.taskCode}` === createForm.taskRef)
+    if (!current || current.disabled) {
+      resetCreateForm()
+    }
+  }
+)
+
 const handleCreateInstance = async () => {
-  if (!selectedDefinition.value) {
+  if (!selectedCreateDefinition.value) {
     ElMessage.warning('请先选择任务实例')
+    return
+  }
+  if (selectedCreateDefinition.value.disabled) {
+    ElMessage.warning('该任务实例已创建，不能重复创建')
     return
   }
   if (!createForm.taskName || !createForm.cron) {
@@ -522,8 +570,8 @@ const handleCreateInstance = async () => {
   creating.value = true
   try {
     const res = await createTaskInstance({
-      taskType: selectedDefinition.value.taskType,
-      taskCode: selectedDefinition.value.taskCode,
+      taskType: selectedCreateDefinition.value.taskType,
+      taskCode: selectedCreateDefinition.value.taskCode,
       taskName: createForm.taskName,
       cron: createForm.cron,
       enabled: createForm.enabled,
@@ -534,7 +582,7 @@ const handleCreateInstance = async () => {
     if (res.code === 200) {
       ElMessage.success('任务实例创建成功')
       createVisible.value = false
-      await loadData()
+      await Promise.all([loadData(), loadDefinitions()])
       return
     }
     ElMessage.error(res.message || '创建任务实例失败')
