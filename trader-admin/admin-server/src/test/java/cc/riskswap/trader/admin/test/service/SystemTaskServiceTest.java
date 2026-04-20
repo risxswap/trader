@@ -192,6 +192,37 @@ public class SystemTaskServiceTest {
     }
 
     @Test
+    void should_reject_duplicate_creation_for_non_strategy_task() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
+        Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        String json = "{\"taskType\":\"COLLECTOR\",\"taskCode\":\"fundSync\",\"taskName\":\"同步基金\",\"defaultCron\":\"0 0 1 * * ?\",\"defaultEnabled\":true}";
+        Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync")).thenReturn(json);
+        Mockito.when(systemTaskDao.getByAppNameAndTaskCode("COLLECTOR", "fundSync")).thenReturn(sampleTask());
+
+        SystemTaskInstanceCreateParam param = new SystemTaskInstanceCreateParam();
+        param.setTaskType("COLLECTOR");
+        param.setTaskCode("fundSync");
+        param.setTaskName("自定义同步基金");
+        param.setCron("0 15 9 * * ?");
+        param.setStatus("STOPPED");
+
+        cc.riskswap.trader.admin.exception.Warning warning = Assertions.assertThrows(
+                cc.riskswap.trader.admin.exception.Warning.class,
+                () -> systemTaskService.createInstance(param)
+        );
+
+        Assertions.assertEquals("任务实例已存在", warning.getMessage());
+        Mockito.verify(systemTaskDao, Mockito.never()).save(Mockito.any());
+        Mockito.verifyNoInteractions(refreshPublisher);
+    }
+
+    @Test
     void should_delete_instance_and_publish_deleted_message() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
