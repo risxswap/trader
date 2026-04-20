@@ -74,6 +74,9 @@ public class TraderTaskLogAspect {
     }
 
     private void persistRunningLog(String taskName, String taskGroup, LocalDateTime startTime, String traceId) {
+        if (TaskLogExecutionContext.isExecutorManaged()) {
+            return;
+        }
         try {
             if (taskLogStore != null) {
                 taskLogStore.writeRunning(taskName, taskGroup, startTime, traceId);
@@ -92,6 +95,9 @@ public class TraderTaskLogAspect {
                                    Object result,
                                    LocalDateTime startTime,
                                    long executionMs) {
+        if (TaskLogExecutionContext.isExecutorManaged()) {
+            return;
+        }
         try {
             if (taskLogStore != null) {
                 taskLogStore.writeFinished(
@@ -115,6 +121,9 @@ public class TraderTaskLogAspect {
                                    Throwable throwable,
                                    LocalDateTime startTime,
                                    long executionMs) {
+        if (TaskLogExecutionContext.isExecutorManaged()) {
+            return;
+        }
         try {
             if (taskLogStore != null) {
                 taskLogStore.writeFinished(

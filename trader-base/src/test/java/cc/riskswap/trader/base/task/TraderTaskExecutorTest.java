@@ -1,13 +1,20 @@
 package cc.riskswap.trader.base.task;
 
+import cc.riskswap.trader.base.logging.TaskLogStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,9 +29,10 @@ class TraderTaskExecutorTest {
         HashOperations<String, Object, Object> hashOperations = mock(HashOperations.class);
         TraderTaskLock traderTaskLock = mock(TraderTaskLock.class);
         SystemTaskStatusStore statusStore = mock(SystemTaskStatusStore.class);
+        TaskLogStore taskLogStore = mock(TaskLogStore.class);
         SampleTask task = new SampleTask();
         TraderTaskRegistry registry = new TraderTaskRegistry(List.of(task));
-        TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, statusStore);
+        TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, statusStore, taskLogStore);
 
         when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(hashOperations.get("trader:task:instances:COLLECTOR", "fundSync")).thenReturn("""
@@ -37,6 +45,8 @@ class TraderTaskExecutorTest {
 
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "RUNNING", null, null);
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "STOPPED", "SUCCESS", null);
+        verify(taskLogStore).writeRunning(eq("同步基金"), eq("fundSync"), any(), anyString());
+        verify(taskLogStore).writeFinished(anyString(), eq("SUCCESS"), anyLong(), contains("triggerType=SCHEDULED"));
         org.assertj.core.api.Assertions.assertThat(output.getOut())
                 .contains("Trigger trader task execution")
                 .contains("fundSync");
@@ -49,9 +59,10 @@ class TraderTaskExecutorTest {
         HashOperations<String, Object, Object> hashOperations = mock(HashOperations.class);
         TraderTaskLock traderTaskLock = mock(TraderTaskLock.class);
         SystemTaskStatusStore statusStore = mock(SystemTaskStatusStore.class);
+        TaskLogStore taskLogStore = mock(TaskLogStore.class);
         FailingTask task = new FailingTask();
         TraderTaskRegistry registry = new TraderTaskRegistry(List.of(task));
-        TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, statusStore);
+        TraderTaskExecutor executor = new TraderTaskExecutor(registry, redisTemplate, traderTaskLock, statusStore, taskLogStore);
 
         when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(hashOperations.get("trader:task:instances:COLLECTOR", "fundSync")).thenReturn("""
@@ -65,6 +76,9 @@ class TraderTaskExecutorTest {
 
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "RUNNING", null, null);
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "STOPPED", "FAILED", null);
+        verify(taskLogStore).writeRunning(eq("同步基金"), eq("fundSync"), any(), anyString());
+        verify(taskLogStore).writeFinished(anyString(), eq("FAILED"), anyLong(), contains("triggerType=SCHEDULED"));
+        verify(taskLogStore).writeFinished(anyString(), eq("FAILED"), anyLong(), contains("boom"));
     }
 
     private static class SampleTask implements CollectorTask {

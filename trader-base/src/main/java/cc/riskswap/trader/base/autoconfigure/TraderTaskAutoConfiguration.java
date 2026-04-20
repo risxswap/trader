@@ -1,5 +1,6 @@
 package cc.riskswap.trader.base.autoconfigure;
 
+import cc.riskswap.trader.base.logging.TaskLogStore;
 import cc.riskswap.trader.base.task.SystemTaskStatusStore;
 import cc.riskswap.trader.base.task.TraderTask;
 import cc.riskswap.trader.base.task.TraderTaskMetadataSyncService;
@@ -139,7 +140,13 @@ public class TraderTaskAutoConfiguration {
     }
 
     @Bean
-    public TraderTaskExecutor traderTaskExecutor(TraderTaskRegistry registry, StringRedisTemplate stringRedisTemplate, TraderTaskLock lock, SystemTaskStatusStore systemTaskStatusStore) {
-        return new TraderTaskExecutor(registry, stringRedisTemplate, lock, systemTaskStatusStore);
+    public TraderTaskExecutor traderTaskExecutor(
+            TraderTaskRegistry registry,
+            StringRedisTemplate stringRedisTemplate,
+            TraderTaskLock lock,
+            SystemTaskStatusStore systemTaskStatusStore,
+            TaskLogStore taskLogStore
+    ) {
+        return new TraderTaskExecutor(registry, stringRedisTemplate, lock, systemTaskStatusStore, taskLogStore);
     }
 }
