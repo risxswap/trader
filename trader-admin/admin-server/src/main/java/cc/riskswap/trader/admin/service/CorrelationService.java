@@ -85,10 +85,10 @@ public class CorrelationService {
 
     private CorrelationDto toDto(Correlation correlation) {
         CorrelationDto dto = BeanUtil.copyProperties(correlation, CorrelationDto.class);
-        dto.setAsset1(correlation.getSymbol1());
-        dto.setAsset1Type(correlation.getSymbol1Type());
-        dto.setAsset2(correlation.getSymbol2());
-        dto.setAsset2Type(correlation.getSymbol2Type());
+        dto.setAsset1(correlation.getAsset1());
+        dto.setAsset1Type(correlation.getAsset1Type());
+        dto.setAsset2(correlation.getAsset2());
+        dto.setAsset2Type(correlation.getAsset2Type());
         return dto;
     }
 
@@ -97,10 +97,10 @@ public class CorrelationService {
         correlation.setCoefficient(param.getCoefficient());
         correlation.setPValue(param.getPValue());
         correlation.setPeriod(param.getPeriod());
-        correlation.setSymbol1(param.getAsset1());
-        correlation.setSymbol1Type(param.getAsset1Type());
-        correlation.setSymbol2(param.getAsset2());
-        correlation.setSymbol2Type(param.getAsset2Type());
+        correlation.setAsset1(param.getAsset1());
+        correlation.setAsset1Type(param.getAsset1Type());
+        correlation.setAsset2(param.getAsset2());
+        correlation.setAsset2Type(param.getAsset2Type());
         return correlation;
     }
 }

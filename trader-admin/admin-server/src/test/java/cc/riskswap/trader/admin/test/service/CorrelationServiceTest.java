@@ -21,11 +21,11 @@ public class CorrelationServiceTest {
         CorrelationService correlationService = createService(correlationDao);
 
         Correlation entity = new Correlation();
-        entity.setId(88);
-        entity.setSymbol1("510300");
-        entity.setSymbol1Type("ETF");
-        entity.setSymbol2("159915");
-        entity.setSymbol2Type("ETF");
+        entity.setId(88L);
+        entity.setAsset1("510300");
+        entity.setAsset1Type("ETF");
+        entity.setAsset2("159915");
+        entity.setAsset2Type("ETF");
         entity.setPeriod("6M");
         entity.setCoefficient(BigDecimal.valueOf(0.92d));
         entity.setPValue(BigDecimal.valueOf(0.03d));
@@ -49,7 +49,7 @@ public class CorrelationServiceTest {
         CorrelationService correlationService = createService(correlationDao);
 
         Correlation existing = new Correlation();
-        existing.setId(100);
+        existing.setId(100L);
         Mockito.when(correlationDao.getById(100)).thenReturn(existing);
 
         CorrelationParam param = new CorrelationParam();
@@ -69,10 +69,10 @@ public class CorrelationServiceTest {
 
         Correlation saved = captor.getValue();
         Assertions.assertNull(saved.getId());
-        Assertions.assertEquals("000001", saved.getSymbol1());
-        Assertions.assertEquals("ETF", saved.getSymbol1Type());
-        Assertions.assertEquals("000002", saved.getSymbol2());
-        Assertions.assertEquals("LOF", saved.getSymbol2Type());
+        Assertions.assertEquals("000001", saved.getAsset1());
+        Assertions.assertEquals("ETF", saved.getAsset1Type());
+        Assertions.assertEquals("000002", saved.getAsset2());
+        Assertions.assertEquals("LOF", saved.getAsset2Type());
         Assertions.assertEquals("1Y", saved.getPeriod());
         Assertions.assertEquals(BigDecimal.valueOf(0.81d), saved.getCoefficient());
         Assertions.assertEquals(BigDecimal.valueOf(0.01d), saved.getPValue());
