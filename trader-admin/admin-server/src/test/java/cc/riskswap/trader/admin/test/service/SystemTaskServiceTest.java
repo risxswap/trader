@@ -2,11 +2,13 @@ package cc.riskswap.trader.admin.test.service;
 
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.SystemTaskDto;
+import cc.riskswap.trader.admin.common.model.dto.TaskDefinitionDto;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskInstanceCreateParam;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskInstanceDeleteParam;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskTriggerParam;
 import cc.riskswap.trader.admin.common.model.param.SystemTaskUpdateParam;
 import cc.riskswap.trader.admin.common.model.query.SystemTaskListQuery;
+import cc.riskswap.trader.admin.common.model.query.TaskDefinitionListQuery;
 import cc.riskswap.trader.base.dao.InvestmentDao;
 import cc.riskswap.trader.base.dao.SystemTaskDao;
 import cc.riskswap.trader.base.dao.entity.SystemTask;
@@ -27,6 +29,9 @@ import java.util.List;
 import java.util.Set;
 
 public class SystemTaskServiceTest {
+
+    private static final String SAMPLE_PARAM_SCHEMA = "{\"type\":\"object\",\"properties\":{\"fullSync\":{\"type\":\"boolean\"}}}";
+    private static final String SAMPLE_DEFAULT_PARAMS_JSON = "{\"fullSync\":true}";
 
     @Test
     void should_list_tasks_as_page_dto() {
@@ -149,6 +154,28 @@ public class SystemTaskServiceTest {
     }
 
     @Test
+    void should_read_param_schema_and_default_params_from_redis_definitions() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
+        Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
+        Mockito.when(stringRedisTemplate.keys("trader:task:def:*"))
+                .thenReturn(Set.of("trader:task:def:COLLECTOR:fundSync"));
+        Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync"))
+                .thenReturn(definitionJson("COLLECTOR", "fundSync", "同步基金", "0 0 1 * * ?"));
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        List<TaskDefinitionDto> definitions = systemTaskService.definitions(new TaskDefinitionListQuery());
+
+        Assertions.assertEquals(1, definitions.size());
+        Assertions.assertEquals("fundSync", definitions.getFirst().getTaskCode());
+        Assertions.assertEquals(SAMPLE_PARAM_SCHEMA, definitions.getFirst().getParamSchema());
+        Assertions.assertEquals(SAMPLE_DEFAULT_PARAMS_JSON, definitions.getFirst().getDefaultParamsJson());
+    }
+
+    @Test
     void should_create_instance_from_definition_and_publish_created_message() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
@@ -160,7 +187,7 @@ public class SystemTaskServiceTest {
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
         SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
-        String json = "{\"taskType\":\"COLLECTOR\",\"taskCode\":\"fundSync\",\"taskName\":\"同步基金\",\"defaultCron\":\"0 0 1 * * ?\",\"defaultEnabled\":true}";
+        String json = definitionJson("COLLECTOR", "fundSync", "同步基金", "0 0 1 * * ?");
         Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync")).thenReturn(json);
 
         SystemTaskInstanceCreateParam param = new SystemTaskInstanceCreateParam();
@@ -180,6 +207,8 @@ public class SystemTaskServiceTest {
         Assertions.assertEquals("自定义同步基金", savedTask.getTaskName());
         Assertions.assertEquals("0 15 9 * * ?", savedTask.getCron());
         Assertions.assertEquals("STOPPED", savedTask.getStatus());
+        Assertions.assertEquals(SAMPLE_PARAM_SCHEMA, savedTask.getParamSchema());
+        Assertions.assertEquals(SAMPLE_DEFAULT_PARAMS_JSON, savedTask.getDefaultParamsJson());
         Assertions.assertEquals("{\"fullSync\":false}", savedTask.getParamsJson());
         Assertions.assertEquals("手工创建", savedTask.getRemark());
         Mockito.verify(hashOperations).put(Mockito.eq("trader:task:instances:COLLECTOR"), Mockito.eq("fundSync"), Mockito.anyString());
@@ -342,5 +371,12 @@ public class SystemTaskServiceTest {
         task.setParamsJson("{\"fullSync\":true}");
         task.setUpdatedAt(OffsetDateTime.parse("2026-04-15T10:00:00+08:00"));
         return task;
+    }
+
+    private String definitionJson(String taskType, String taskCode, String taskName, String defaultCron) {
+        return "{\"taskType\":\"" + taskType + "\",\"taskCode\":\"" + taskCode
+                + "\",\"taskName\":\"" + taskName + "\",\"defaultCron\":\"" + defaultCron + "\",\"defaultEnabled\":true,"
+                + "\"paramSchema\":\"" + SAMPLE_PARAM_SCHEMA.replace("\"", "\\\"") + "\","
+                + "\"defaultParamsJson\":\"" + SAMPLE_DEFAULT_PARAMS_JSON.replace("\"", "\\\"") + "\"}";
     }
 }

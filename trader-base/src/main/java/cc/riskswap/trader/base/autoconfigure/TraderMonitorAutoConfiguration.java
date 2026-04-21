@@ -9,6 +9,7 @@ import cc.riskswap.trader.base.monitor.TraderMonitorProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +17,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "trader.monitor", name = "enabled", havingValue = "true")
-@EnableConfigurationProperties({TraderMonitorProperties.class, TraderNodeProperties.class})
+@EnableConfigurationProperties(TraderNodeProperties.class)
 public class TraderMonitorAutoConfiguration {
+
+    @Bean("traderMonitorProperties")
+    @ConditionalOnMissingBean(name = "traderMonitorProperties")
+    @ConfigurationProperties(prefix = "trader.monitor")
+    public TraderMonitorProperties traderMonitorProperties() {
+        return new TraderMonitorProperties();
+    }
 
     @Bean
     @ConditionalOnMissingBean

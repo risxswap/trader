@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 18081
 spring:
   main:
     banner-mode: log
@@ -44,6 +44,12 @@ trader:
     log-on-publish: ${TRADER_MONITOR_LOG_ON_PUBLISH:true}
   node:
     id: ${TRADER_NODE_ID:${HOSTNAME:trader-statistic}}
+    type: ${TRADER_NODE_TYPE:statistic}
+  statistic:
+    correlation:
+      nav-query-code-batch-size: ${TRADER_CORRELATION_NAV_QUERY_CODE_BATCH_SIZE:1000}
+      save-batch-size: ${TRADER_CORRELATION_SAVE_BATCH_SIZE:1000}
+      cleanup-delete-batch-size: ${TRADER_CORRELATION_CLEANUP_DELETE_BATCH_SIZE:1000}
 
 management:
   endpoints:

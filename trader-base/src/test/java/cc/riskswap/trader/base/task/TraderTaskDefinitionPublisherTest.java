@@ -1,7 +1,6 @@
 package cc.riskswap.trader.base.task;
 
 import cn.hutool.json.JSONUtil;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -24,7 +23,13 @@ class TraderTaskDefinitionPublisherTest {
         publisher.publishAll(registry);
 
         Mockito.verify(ops).set(Mockito.eq("trader:task:def:COLLECTOR:fundSync"), Mockito.argThat(json -> {
-            return JSONUtil.isTypeJSON(json) && JSONUtil.parseObj(json).getStr("taskCode").equals("fundSync");
+            if (!JSONUtil.isTypeJSON(json)) {
+                return false;
+            }
+            var obj = JSONUtil.parseObj(json);
+            return "fundSync".equals(obj.getStr("taskCode"))
+                    && "{\"type\":\"object\"}".equals(obj.getStr("paramSchema"))
+                    && "{\"fullSync\":true}".equals(obj.getStr("defaultParamsJson"));
         }));
     }
 

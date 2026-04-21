@@ -7,6 +7,8 @@ import cc.riskswap.trader.base.dao.entity.Correlation;
 import cc.riskswap.trader.base.dao.entity.CorrelationDuplicateGroup;
 import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.base.dao.entity.FundNav;
+import cc.riskswap.trader.statistic.config.StatisticCorrelationProperties;
+import cc.riskswap.trader.statistic.task.CorrelationTaskParams;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,8 +33,6 @@ import java.util.stream.Collectors;
 public class CorrelationService {
 
     private static final int CLEANUP_GROUP_PAGE_SIZE = 200;
-    private static final int CLEANUP_DELETE_BATCH_SIZE = 200;
-    private static final int CORRELATION_SAVE_BATCH_SIZE = 200;
 
     @Autowired
     private CorrelationDao correlationDao;
@@ -42,8 +43,19 @@ public class CorrelationService {
     @Autowired
     private FundNavDao fundNavDao;
 
+    @Autowired
+    private StatisticCorrelationProperties correlationProperties;
+
+    @Transactional("clickHouseTransactionManager")
     public int calculateAndSaveBatch(List<Fund> funds, String period) {
+        return calculateAndSaveBatch(funds, period, CorrelationTaskParams.DEFAULT_MIN_ABS_CORRELATION);
+    }
+
+    @Transactional("clickHouseTransactionManager")
+    public int calculateAndSaveBatch(List<Fund> funds, String period, double minAbsCorrelation) {
         if (funds == null || funds.isEmpty()) {
+            log.info("Skip correlation batch calculation because no funds were provided. period={}, minAbsCorrelation={}",
+                    period, minAbsCorrelation);
             return 0;
         }
 
@@ -54,14 +66,23 @@ public class CorrelationService {
                         map -> new ArrayList<>(map.values())
                 ));
         if (uniqueFunds.size() < 2) {
+            log.info("Skip correlation batch calculation because unique fund count is less than 2. period={}, uniqueFunds={}, minAbsCorrelation={}",
+                    period, uniqueFunds.size(), minAbsCorrelation);
             return 0;
         }
 
         OffsetDateTime startTime = getStartTimeByPeriod(period);
         List<String> codes = uniqueFunds.stream().map(Fund::getCode).toList();
+        long totalPairs = (long) uniqueFunds.size() * (uniqueFunds.size() - 1) / 2;
+        int navQueryBatchSize = correlationProperties.getSafeNavQueryCodeBatchSize();
+        int saveBatchSize = correlationProperties.getSafeSaveBatchSize();
+        log.info("Start correlation batch calculation. period={}, inputFunds={}, uniqueFunds={}, totalPairs={}, navQueryBatchSize={}, saveBatchSize={}, minAbsCorrelation={}, startTime={}",
+                period, funds.size(), uniqueFunds.size(), totalPairs, navQueryBatchSize, saveBatchSize, minAbsCorrelation, startTime);
         Map<String, Map<LocalDate, BigDecimal>> navSeriesByCode = loadNavSeriesByCode(codes, startTime);
         List<Correlation> buffer = new ArrayList<>();
         int savedCount = 0;
+        long skippedEmptySeriesPairs = 0L;
+        long filteredPairs = 0L;
 
         for (int i = 0; i < uniqueFunds.size(); i++) {
             Fund fund1 = uniqueFunds.get(i);
@@ -73,23 +94,28 @@ public class CorrelationService {
                 Fund fund2 = uniqueFunds.get(j);
                 Map<LocalDate, BigDecimal> series2 = navSeriesByCode.getOrDefault(fund2.getCode(), Collections.emptyMap());
                 if (series2.isEmpty()) {
+                    skippedEmptySeriesPairs++;
                     continue;
                 }
-                Correlation correlation = buildCorrelationIfEligible(fund1, fund2, period, series1, series2);
+                Correlation correlation = buildCorrelationIfEligible(fund1, fund2, period, series1, series2, minAbsCorrelation);
                 if (correlation == null) {
+                    filteredPairs++;
                     continue;
                 }
                 buffer.add(correlation);
-                if (buffer.size() >= CORRELATION_SAVE_BATCH_SIZE) {
+                if (buffer.size() >= saveBatchSize) {
                     savedCount += flushCorrelations(buffer);
                 }
             }
         }
 
         savedCount += flushCorrelations(buffer);
+        log.info("Finished correlation batch calculation. period={}, uniqueFunds={}, navSeriesLoaded={}, totalPairs={}, filteredPairs={}, skippedEmptySeriesPairs={}, minAbsCorrelation={}, saved={}",
+                period, uniqueFunds.size(), navSeriesByCode.size(), totalPairs, filteredPairs, skippedEmptySeriesPairs, minAbsCorrelation, savedCount);
         return savedCount;
     }
 
+    @Transactional("clickHouseTransactionManager")
     public void calculateAndSave(String asset1, String asset2, String period) {
         OffsetDateTime startTime = getStartTimeByPeriod(period);
         List<FundNav> navs1 = fundNavDao.listByCodeAndStartTime(asset1, startTime);
@@ -110,10 +136,13 @@ public class CorrelationService {
         saveCorrelation(asset1, asset2, period, stats.coefficient(), stats.pValue());
     }
 
+    @Transactional("clickHouseTransactionManager")
     public int cleanupHistoricalCorrelations() {
+        log.info("Start cleanup of historical correlations.");
         int deletedCount = 0;
         int offset = 0;
         List<Long> deleteBuffer = new ArrayList<>();
+        int cleanupDeleteBatchSize = correlationProperties.getSafeCleanupDeleteBatchSize();
 
         while (true) {
             List<CorrelationDuplicateGroup> groups = correlationDao.listDuplicateGroups(CLEANUP_GROUP_PAGE_SIZE, offset);
@@ -130,7 +159,7 @@ public class CorrelationService {
 
                 for (Long historicalId : historicalIds) {
                     deleteBuffer.add(historicalId);
-                    if (deleteBuffer.size() >= CLEANUP_DELETE_BATCH_SIZE) {
+                    if (deleteBuffer.size() >= cleanupDeleteBatchSize) {
                         correlationDao.deleteByIds(new ArrayList<>(deleteBuffer));
                         deletedCount += deleteBuffer.size();
                         deleteBuffer.clear();
@@ -146,6 +175,7 @@ public class CorrelationService {
             deletedCount += deleteBuffer.size();
         }
 
+        log.info("Finished cleanup of historical correlations. deleted={}", deletedCount);
         return deletedCount;
     }
 
@@ -219,16 +249,37 @@ public class CorrelationService {
     }
 
     private Map<String, Map<LocalDate, BigDecimal>> loadNavSeriesByCode(List<String> codes, OffsetDateTime startTime) {
-        return fundNavDao.listByCodesAndStartTime(codes, startTime).stream()
-                .filter(nav -> nav.getCode() != null && nav.getTime() != null && nav.getAdjNav() != null)
-                .collect(Collectors.groupingBy(
-                        FundNav::getCode,
-                        LinkedHashMap::new,
-                        Collectors.collectingAndThen(Collectors.toList(), this::toNavSeries)));
+        Map<String, Map<LocalDate, BigDecimal>> navSeriesByCode = new LinkedHashMap<>();
+        int batchSize = correlationProperties.getSafeNavQueryCodeBatchSize();
+        int totalBatches = (codes.size() + batchSize - 1) / batchSize;
+        int totalNavRows = 0;
+        for (int offset = 0; offset < codes.size(); offset += batchSize) {
+            int end = Math.min(offset + batchSize, codes.size());
+            List<String> batchCodes = codes.subList(offset, end);
+            int batchIndex = offset / batchSize + 1;
+            List<FundNav> batchNavs = fundNavDao.listByCodesAndStartTime(batchCodes, startTime);
+            totalNavRows += batchNavs.size();
+            log.info("Loaded NAV batch {}/{}. codes={}, navRows={}, startTime={}",
+                    batchIndex, totalBatches, batchCodes.size(), batchNavs.size(), startTime);
+            batchNavs.stream()
+                    .filter(nav -> nav.getCode() != null && nav.getTime() != null && nav.getAdjNav() != null)
+                    .forEach(nav -> navSeriesByCode
+                            .computeIfAbsent(nav.getCode(), ignored -> new LinkedHashMap<>())
+                            .putIfAbsent(nav.getTime().toLocalDate(), nav.getAdjNav()));
+        }
+        log.info("Finished loading NAV series. requestedCodes={}, loadedSeries={}, totalNavRows={}",
+                codes.size(), navSeriesByCode.size(), totalNavRows);
+        return navSeriesByCode;
     }
 
     private CorrelationStats calculateCorrelationStats(Map<LocalDate, BigDecimal> series1,
                                                        Map<LocalDate, BigDecimal> series2) {
+        return calculateCorrelationStats(series1, series2, CorrelationTaskParams.DEFAULT_MIN_ABS_CORRELATION);
+    }
+
+    private CorrelationStats calculateCorrelationStats(Map<LocalDate, BigDecimal> series1,
+                                                       Map<LocalDate, BigDecimal> series2,
+                                                       double minAbsCorrelation) {
         List<Double> list1 = new ArrayList<>();
         List<Double> list2 = new ArrayList<>();
         series1.keySet().stream()
@@ -262,7 +313,7 @@ public class CorrelationService {
             pValue = 2.0d * (1.0d - tDistribution.cumulativeProbability(Math.abs(t)));
         }
 
-        if (!(absR > 0.5d && pValue < 0.05d)) {
+        if (!(absR > minAbsCorrelation && pValue < 0.05d)) {
             return null;
         }
         return new CorrelationStats(BigDecimal.valueOf(correlationValue), BigDecimal.valueOf(pValue));
@@ -286,8 +337,9 @@ public class CorrelationService {
 
     private Correlation buildCorrelationIfEligible(Fund fund1, Fund fund2, String period,
                                                    Map<LocalDate, BigDecimal> series1,
-                                                   Map<LocalDate, BigDecimal> series2) {
-        CorrelationStats stats = calculateCorrelationStats(series1, series2);
+                                                   Map<LocalDate, BigDecimal> series2,
+                                                   double minAbsCorrelation) {
+        CorrelationStats stats = calculateCorrelationStats(series1, series2, minAbsCorrelation);
         if (stats == null) {
             return null;
         }
@@ -299,7 +351,9 @@ public class CorrelationService {
             return 0;
         }
         List<Correlation> batch = new ArrayList<>(buffer);
-        correlationDao.saveBatch(batch, CORRELATION_SAVE_BATCH_SIZE);
+        int saveBatchSize = correlationProperties.getSafeSaveBatchSize();
+        log.info("Persisting correlation batch. size={}, configuredBatchSize={}", batch.size(), saveBatchSize);
+        correlationDao.saveBatch(batch, saveBatchSize);
         buffer.clear();
         return batch.size();
     }

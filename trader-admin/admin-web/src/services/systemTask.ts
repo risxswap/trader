@@ -58,6 +58,23 @@ export interface TaskDefinitionDto {
   reportAt?: string
 }
 
+export interface JsonSchemaNumberProperty {
+  type: 'number'
+  title?: string
+  description?: string
+  default?: number
+  minimum?: number
+  maximum?: number
+}
+
+export interface TaskParamSchemaDto {
+  type: 'object'
+  title?: string
+  description?: string
+  required?: string[]
+  properties: Record<string, JsonSchemaNumberProperty>
+}
+
 export const listTaskDefinitions = async (data: { taskType?: string; taskCode?: string; taskName?: string }): Promise<ResData<TaskDefinitionDto[]>> => {
   const res = await http.post('/task/definition/list', data)
   return res.data as ResData<TaskDefinitionDto[]>

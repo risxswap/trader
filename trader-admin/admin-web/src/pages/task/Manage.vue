@@ -164,7 +164,23 @@
           <el-input v-model="editForm.status" disabled placeholder="运行状态" />
         </el-form-item>
         <el-form-item label="任务参数">
+          <div v-if="editSchemaFields.length" class="schema-form">
+            <div v-for="field in editSchemaFields" :key="field.key" class="schema-form__field">
+              <div class="schema-form__label">{{ field.title || field.key }}</div>
+              <el-input-number
+                :model-value="editSchemaValues[field.key]"
+                :min="field.minimum"
+                :max="field.maximum"
+                :step="0.1"
+                controls-position="right"
+                class="schema-form__input"
+                @update:model-value="updateEditSchemaValue(field.key, $event)"
+              />
+              <div class="schema-form__desc">{{ formatSchemaFieldHint(field) }}</div>
+            </div>
+          </div>
           <el-input
+            v-else
             v-model="editForm.paramsJson"
             type="textarea"
             :autosize="{ minRows: 6, maxRows: 12 }"
@@ -227,7 +243,22 @@
             <el-input v-model="createForm.status" disabled placeholder="运行状态" />
           </el-form-item>
           <el-form-item label="任务参数">
+            <div v-if="createSchemaFields.length" class="schema-form">
+              <div v-for="field in createSchemaFields" :key="field.key" class="schema-form__field">
+                <div class="schema-form__label">{{ field.title || field.key }}</div>
+                <el-input-number
+                  :model-value="createSchemaValues[field.key]"
+                  :min="field.minimum"
+                  :max="field.maximum"
+                  :step="0.1"
+                  controls-position="right"
+                  class="schema-form__input"
+                  @update:model-value="updateCreateSchemaValue(field.key, $event)" />
+                <div class="schema-form__desc">{{ formatSchemaFieldHint(field) }}</div>
+              </div>
+            </div>
             <el-input
+              v-else
               v-model="createForm.paramsJson"
               type="textarea"
               :autosize="{ minRows: 6, maxRows: 12 }"
@@ -272,8 +303,10 @@ import {
   listTaskDefinitions,
   createTaskInstance,
   deleteTaskInstance,
+  type JsonSchemaNumberProperty,
   type SystemTaskDto,
   type SystemTaskQuery,
+  type TaskParamSchemaDto,
   type TaskDefinitionDto
 } from '../../services/systemTask'
 
@@ -289,11 +322,17 @@ const creating = ref(false)
 const tableData = ref<SystemTaskDto[]>([])
 const definitions = ref<TaskDefinitionDto[]>([])
 const total = ref(0)
+const editSchemaValues = reactive<Record<string, number>>({})
+const createSchemaValues = reactive<Record<string, number>>({})
 
 type CreateTaskDefinitionOption = TaskDefinitionDto & {
   disabled: boolean
   disabledReason?: string
   optionLabel: string
+}
+
+type SchemaNumberField = JsonSchemaNumberProperty & {
+  key: string
 }
 
 const query = reactive<SystemTaskQuery>({
@@ -356,6 +395,145 @@ const selectedCreateDefinition = computed(() => {
   const [taskType, taskCode] = createForm.taskRef.split('::')
   return createDefinitionOptions.value.find((item) => item.taskType === taskType && item.taskCode === taskCode) || null
 })
+
+const parseTaskParamSchema = (schemaText?: string): SchemaNumberField[] => {
+  if (!schemaText) return []
+  try {
+    const schema = JSON.parse(schemaText) as Partial<TaskParamSchemaDto> & {
+      properties?: Record<string, unknown>
+    }
+    if (schema.type !== 'object' || !schema.properties || Array.isArray(schema.properties)) {
+      return []
+    }
+
+    const fields: SchemaNumberField[] = []
+    for (const [key, rawProperty] of Object.entries(schema.properties)) {
+      if (!rawProperty || typeof rawProperty !== 'object') {
+        return []
+      }
+      const property = rawProperty as Partial<JsonSchemaNumberProperty>
+      if (property.type !== 'number') {
+        return []
+      }
+      fields.push({
+        key,
+        type: 'number',
+        title: typeof property.title === 'string' ? property.title : undefined,
+        description: typeof property.description === 'string' ? property.description : undefined,
+        default: typeof property.default === 'number' ? property.default : undefined,
+        minimum: typeof property.minimum === 'number' ? property.minimum : undefined,
+        maximum: typeof property.maximum === 'number' ? property.maximum : undefined
+      })
+    }
+    return fields
+  } catch {
+    return []
+  }
+}
+
+const parseParamsObject = (jsonText?: string): Record<string, unknown> => {
+  if (!jsonText) return {}
+  try {
+    const parsed = JSON.parse(jsonText)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {}
+    }
+    return parsed as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+const editSchemaFields = computed(() => parseTaskParamSchema(editForm.paramSchema))
+const createSchemaFields = computed(() => parseTaskParamSchema(selectedCreateDefinition.value?.paramSchema))
+
+const clearSchemaValues = (target: Record<string, number>) => {
+  Object.keys(target).forEach((key) => {
+    delete target[key]
+  })
+}
+
+const getSchemaFallbackValue = (field: SchemaNumberField) => {
+  if (typeof field.default === 'number') return field.default
+  if (typeof field.minimum === 'number') return field.minimum
+  return 0
+}
+
+const normalizeSchemaValue = (value: unknown, field: SchemaNumberField) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return getSchemaFallbackValue(field)
+  }
+  if (typeof field.minimum === 'number' && value < field.minimum) {
+    return getSchemaFallbackValue(field)
+  }
+  if (typeof field.maximum === 'number' && value > field.maximum) {
+    return getSchemaFallbackValue(field)
+  }
+  return value
+}
+
+const syncParamsJsonFromSchema = (
+  fields: SchemaNumberField[],
+  values: Record<string, number>,
+  setParamsJson: (value: string) => void
+) => {
+  const payload: Record<string, number> = {}
+  fields.forEach((field) => {
+    const normalized = normalizeSchemaValue(values[field.key], field)
+    values[field.key] = normalized
+    payload[field.key] = normalized
+  })
+  setParamsJson(JSON.stringify(payload))
+}
+
+const hydrateSchemaForm = (
+  schemaText: string | undefined,
+  paramsJson: string | undefined,
+  defaultParamsJson: string | undefined,
+  values: Record<string, number>,
+  setParamsJson: (value: string) => void
+) => {
+  clearSchemaValues(values)
+  const fields = parseTaskParamSchema(schemaText)
+  if (!fields.length) return
+
+  const currentParams = parseParamsObject(paramsJson)
+  const defaultParams = parseParamsObject(defaultParamsJson)
+  fields.forEach((field) => {
+    const rawValue = currentParams[field.key] ?? defaultParams[field.key]
+    values[field.key] = normalizeSchemaValue(rawValue, field)
+  })
+  syncParamsJsonFromSchema(fields, values, setParamsJson)
+}
+
+const updateEditSchemaValue = (key: string, value: number | null | undefined) => {
+  const field = editSchemaFields.value.find((item) => item.key === key)
+  if (!field) return
+  editSchemaValues[key] = normalizeSchemaValue(value, field)
+  syncParamsJsonFromSchema(editSchemaFields.value, editSchemaValues, (nextValue) => {
+    editForm.paramsJson = nextValue
+  })
+}
+
+const updateCreateSchemaValue = (key: string, value: number | null | undefined) => {
+  const field = createSchemaFields.value.find((item) => item.key === key)
+  if (!field) return
+  createSchemaValues[key] = normalizeSchemaValue(value, field)
+  syncParamsJsonFromSchema(createSchemaFields.value, createSchemaValues, (nextValue) => {
+    createForm.paramsJson = nextValue
+  })
+}
+
+const formatSchemaFieldHint = (field: SchemaNumberField) => {
+  const hints: string[] = []
+  if (field.description) {
+    hints.push(field.description)
+  }
+  if (typeof field.minimum === 'number' || typeof field.maximum === 'number') {
+    hints.push(`范围 ${field.minimum ?? '-'} ~ ${field.maximum ?? '-'}`)
+  }
+  return hints.join(' | ') || '数字参数'
+}
 
 const loadData = async () => {
   loading.value = true
@@ -420,6 +598,9 @@ const openEdit = (row: SystemTaskDto) => {
   editForm.paramsJson = row.paramsJson || ''
   editForm.paramSchema = row.paramSchema || ''
   editForm.remark = row.remark || ''
+  hydrateSchemaForm(editForm.paramSchema, editForm.paramsJson, row.defaultParamsJson, editSchemaValues, (value) => {
+    editForm.paramsJson = value
+  })
   editVisible.value = true
 }
 
@@ -506,6 +687,7 @@ const resetCreateForm = () => {
   createForm.status = 'STOPPED'
   createForm.paramsJson = ''
   createForm.remark = ''
+  clearSchemaValues(createSchemaValues)
 }
 
 const loadDefinitions = async () => {
@@ -540,6 +722,9 @@ watch(
     createForm.enabled = target.defaultEnabled ?? false
     createForm.status = 'STOPPED'
     createForm.paramsJson = target.defaultParamsJson || ''
+    hydrateSchemaForm(target.paramSchema, createForm.paramsJson, target.defaultParamsJson, createSchemaValues, (value) => {
+      createForm.paramsJson = value
+    })
   }
 )
 
@@ -834,6 +1019,38 @@ onMounted(() => {
 
 .edit-form :deep(.el-textarea__inner) {
   font-family: Consolas, Monaco, monospace;
+}
+
+.schema-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schema-form__field {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.schema-form__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.schema-form__input {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.schema-form__desc {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #64748b;
 }
 
 .create-drawer {
