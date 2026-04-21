@@ -3,6 +3,7 @@ package cc.riskswap.trader.base.dao;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.time.ZoneId;
+import java.util.Collections;
 
 import org.springframework.stereotype.Repository;
 
@@ -39,6 +40,17 @@ public class FundNavDao extends ServiceImpl<FundNavMapper, FundNav> {
         wrapper.eq(FundNav::getCode, code);
         wrapper.ge(FundNav::getTime, startTime);
         wrapper.orderByAsc(FundNav::getTime);
+        return this.list(wrapper);
+    }
+
+    public List<FundNav> listByCodesAndStartTime(List<String> codes, OffsetDateTime startTime) {
+        if (codes == null || codes.isEmpty()) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<FundNav> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(FundNav::getCode, codes);
+        wrapper.ge(FundNav::getTime, startTime);
+        wrapper.orderByAsc(FundNav::getCode, FundNav::getTime);
         return this.list(wrapper);
     }
 

@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class CorrelationService {
 
     private static final int CLEANUP_GROUP_PAGE_SIZE = 200;
     private static final int CLEANUP_DELETE_BATCH_SIZE = 200;
+    private static final int CORRELATION_SAVE_BATCH_SIZE = 200;
 
     @Autowired
     private CorrelationDao correlationDao;
@@ -38,6 +41,54 @@ public class CorrelationService {
 
     @Autowired
     private FundNavDao fundNavDao;
+
+    public int calculateAndSaveBatch(List<Fund> funds, String period) {
+        if (funds == null || funds.isEmpty()) {
+            return 0;
+        }
+
+        List<Fund> uniqueFunds = funds.stream()
+                .filter(fund -> fund.getCode() != null)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Fund::getCode, fund -> fund, (existing, ignored) -> existing, LinkedHashMap::new),
+                        map -> new ArrayList<>(map.values())
+                ));
+        if (uniqueFunds.size() < 2) {
+            return 0;
+        }
+
+        OffsetDateTime startTime = getStartTimeByPeriod(period);
+        List<String> codes = uniqueFunds.stream().map(Fund::getCode).toList();
+        Map<String, Map<LocalDate, BigDecimal>> navSeriesByCode = loadNavSeriesByCode(codes, startTime);
+        List<Correlation> buffer = new ArrayList<>();
+        int savedCount = 0;
+
+        for (int i = 0; i < uniqueFunds.size(); i++) {
+            Fund fund1 = uniqueFunds.get(i);
+            Map<LocalDate, BigDecimal> series1 = navSeriesByCode.getOrDefault(fund1.getCode(), Collections.emptyMap());
+            if (series1.isEmpty()) {
+                continue;
+            }
+            for (int j = i + 1; j < uniqueFunds.size(); j++) {
+                Fund fund2 = uniqueFunds.get(j);
+                Map<LocalDate, BigDecimal> series2 = navSeriesByCode.getOrDefault(fund2.getCode(), Collections.emptyMap());
+                if (series2.isEmpty()) {
+                    continue;
+                }
+                Correlation correlation = buildCorrelationIfEligible(fund1, fund2, period, series1, series2);
+                if (correlation == null) {
+                    continue;
+                }
+                buffer.add(correlation);
+                if (buffer.size() >= CORRELATION_SAVE_BATCH_SIZE) {
+                    savedCount += flushCorrelations(buffer);
+                }
+            }
+        }
+
+        savedCount += flushCorrelations(buffer);
+        return savedCount;
+    }
 
     public void calculateAndSave(String asset1, String asset2, String period) {
         OffsetDateTime startTime = getStartTimeByPeriod(period);
@@ -49,61 +100,14 @@ public class CorrelationService {
             return;
         }
 
-        Map<LocalDate, BigDecimal> map1 = navs1.stream()
-                .filter(n -> n.getAdjNav() != null)
-                .collect(Collectors.toMap(
-                        n -> n.getTime().toLocalDate(),
-                        FundNav::getAdjNav,
-                        (v1, v2) -> v1
-                ));
-
-        Map<LocalDate, BigDecimal> map2 = navs2.stream()
-                .filter(n -> n.getAdjNav() != null)
-                .collect(Collectors.toMap(
-                        n -> n.getTime().toLocalDate(),
-                        FundNav::getAdjNav,
-                        (v1, v2) -> v1
-                ));
-
-        List<Double> list1 = new ArrayList<>();
-        List<Double> list2 = new ArrayList<>();
-        map1.keySet().stream()
-                .filter(map2::containsKey)
-                .sorted()
-                .forEach(date -> {
-                    list1.add(map1.get(date).doubleValue());
-                    list2.add(map2.get(date).doubleValue());
-                });
-
-        if (list1.size() < 3) {
+        Map<LocalDate, BigDecimal> map1 = toNavSeries(navs1);
+        Map<LocalDate, BigDecimal> map2 = toNavSeries(navs2);
+        CorrelationStats stats = calculateCorrelationStats(map1, map2);
+        if (stats == null) {
             log.warn("Not enough common data points for correlation calculation between {} and {}", asset1, asset2);
             return;
         }
-
-        double[] array1 = list1.stream().mapToDouble(Double::doubleValue).toArray();
-        double[] array2 = list2.stream().mapToDouble(Double::doubleValue).toArray();
-        PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
-        double correlationValue = pearsonsCorrelation.correlation(array1, array2);
-        if (Double.isNaN(correlationValue)) {
-            return;
-        }
-
-        int n = array1.length;
-        double absR = Math.abs(correlationValue);
-        double pValue;
-        if (absR == 1.0d) {
-            pValue = 0.0d;
-        } else {
-            double t = correlationValue * Math.sqrt((n - 2.0d) / (1.0d - correlationValue * correlationValue));
-            TDistribution tDistribution = new TDistribution(n - 2);
-            pValue = 2.0d * (1.0d - tDistribution.cumulativeProbability(Math.abs(t)));
-        }
-
-        if (!(absR > 0.5d && pValue < 0.05d)) {
-            return;
-        }
-
-        saveCorrelation(asset1, asset2, period, BigDecimal.valueOf(correlationValue), BigDecimal.valueOf(pValue));
+        saveCorrelation(asset1, asset2, period, stats.coefficient(), stats.pValue());
     }
 
     public int cleanupHistoricalCorrelations() {
@@ -203,11 +207,111 @@ public class CorrelationService {
         appendCorrelation(correlation);
     }
 
+    private Map<LocalDate, BigDecimal> toNavSeries(List<FundNav> navs) {
+        return navs.stream()
+                .filter(nav -> nav.getTime() != null && nav.getAdjNav() != null)
+                .collect(Collectors.toMap(
+                        nav -> nav.getTime().toLocalDate(),
+                        FundNav::getAdjNav,
+                        (existing, ignored) -> existing,
+                        LinkedHashMap::new
+                ));
+    }
+
+    private Map<String, Map<LocalDate, BigDecimal>> loadNavSeriesByCode(List<String> codes, OffsetDateTime startTime) {
+        return fundNavDao.listByCodesAndStartTime(codes, startTime).stream()
+                .filter(nav -> nav.getCode() != null && nav.getTime() != null && nav.getAdjNav() != null)
+                .collect(Collectors.groupingBy(
+                        FundNav::getCode,
+                        LinkedHashMap::new,
+                        Collectors.collectingAndThen(Collectors.toList(), this::toNavSeries)));
+    }
+
+    private CorrelationStats calculateCorrelationStats(Map<LocalDate, BigDecimal> series1,
+                                                       Map<LocalDate, BigDecimal> series2) {
+        List<Double> list1 = new ArrayList<>();
+        List<Double> list2 = new ArrayList<>();
+        series1.keySet().stream()
+                .filter(series2::containsKey)
+                .sorted()
+                .forEach(date -> {
+                    list1.add(series1.get(date).doubleValue());
+                    list2.add(series2.get(date).doubleValue());
+                });
+
+        if (list1.size() < 3) {
+            return null;
+        }
+
+        double[] array1 = list1.stream().mapToDouble(Double::doubleValue).toArray();
+        double[] array2 = list2.stream().mapToDouble(Double::doubleValue).toArray();
+        PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+        double correlationValue = pearsonsCorrelation.correlation(array1, array2);
+        if (Double.isNaN(correlationValue)) {
+            return null;
+        }
+
+        int n = array1.length;
+        double absR = Math.abs(correlationValue);
+        double pValue;
+        if (absR == 1.0d) {
+            pValue = 0.0d;
+        } else {
+            double t = correlationValue * Math.sqrt((n - 2.0d) / (1.0d - correlationValue * correlationValue));
+            TDistribution tDistribution = new TDistribution(n - 2);
+            pValue = 2.0d * (1.0d - tDistribution.cumulativeProbability(Math.abs(t)));
+        }
+
+        if (!(absR > 0.5d && pValue < 0.05d)) {
+            return null;
+        }
+        return new CorrelationStats(BigDecimal.valueOf(correlationValue), BigDecimal.valueOf(pValue));
+    }
+
+    private Correlation createCorrelation(Fund fund1, Fund fund2, String period, CorrelationStats stats) {
+        OffsetDateTime now = OffsetDateTime.now();
+        Correlation correlation = new Correlation();
+        correlation.setId(IdUtil.getSnowflakeNextId());
+        correlation.setAsset1(fund1.getCode());
+        correlation.setAsset1Type(fund1.getType());
+        correlation.setAsset2(fund2.getCode());
+        correlation.setAsset2Type(fund2.getType());
+        correlation.setPeriod(period);
+        correlation.setCoefficient(stats.coefficient());
+        correlation.setPValue(stats.pValue());
+        correlation.setCreatedAt(now);
+        correlation.setUpdatedAt(now);
+        return correlation;
+    }
+
+    private Correlation buildCorrelationIfEligible(Fund fund1, Fund fund2, String period,
+                                                   Map<LocalDate, BigDecimal> series1,
+                                                   Map<LocalDate, BigDecimal> series2) {
+        CorrelationStats stats = calculateCorrelationStats(series1, series2);
+        if (stats == null) {
+            return null;
+        }
+        return createCorrelation(fund1, fund2, period, stats);
+    }
+
+    private int flushCorrelations(List<Correlation> buffer) {
+        if (buffer.isEmpty()) {
+            return 0;
+        }
+        List<Correlation> batch = new ArrayList<>(buffer);
+        correlationDao.saveBatch(batch, CORRELATION_SAVE_BATCH_SIZE);
+        buffer.clear();
+        return batch.size();
+    }
+
     private void appendCorrelation(Correlation correlation) {
         OffsetDateTime now = OffsetDateTime.now();
         correlation.setCreatedAt(now);
         correlation.setUpdatedAt(now);
         correlation.setId(IdUtil.getSnowflakeNextId());
         correlationDao.save(correlation);
+    }
+
+    private record CorrelationStats(BigDecimal coefficient, BigDecimal pValue) {
     }
 }
