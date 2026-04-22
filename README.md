@@ -32,6 +32,9 @@
 ./build.sh package trader-executor
 ./build.sh package trader-statistic
 
+# 顺序打包所有顶层模块
+./build.sh package-all
+
 # 全量 install，跳过测试
 ./build.sh full-install
 

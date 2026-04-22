@@ -36,7 +36,7 @@ fi
 echo -e "${GREEN}执行Maven打包(admin-server模块)...${NC}"
 (
     cd "${ROOT_DIR}"
-    "$MVN_CMD" clean package -pl admin-server -am -Dmaven.test.skip=true
+    "$MVN_CMD" -f "${ROOT_DIR}/../pom.xml" clean package -pl trader-admin/admin-server -am -Dmaven.test.skip=true
 )
 
 if [ ! -f "${JAR_FILE}" ]; then

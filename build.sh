@@ -32,10 +32,32 @@ require_mvnw() {
   chmod +x "$ROOT_DIR/mvnw"
 }
 
+package_one_module() {
+  local module="$1"
+  local module_dir="$ROOT_DIR/$module"
+  local package_script="$module_dir/package.sh"
+
+  if [[ ! -d "$module_dir" ]]; then
+    echo "Module directory not found: $module_dir" >&2
+    exit 1
+  fi
+
+  echo "Packaging $module..."
+  if [[ -f "$package_script" ]]; then
+    chmod +x "$package_script"
+    "$package_script"
+  else
+    require_mvnw
+    "$ROOT_DIR/mvnw" -pl "$module" -am clean package -DskipTests
+  fi
+  echo "Packaged $module"
+}
+
 print_help() {
   cat <<'EOF'
 Usage:
   ./build.sh package <module>
+  ./build.sh package-all
   ./build.sh full-install
   ./build.sh help
 
@@ -56,7 +78,7 @@ case "$command" in
     [[ -n "$command" ]] || exit 1
     exit 0
     ;;
-  package|full-install)
+  package|package-all|full-install)
     ;;
   "")
     ;;
@@ -81,20 +103,15 @@ if [[ "$command" == "package" ]]; then
     exit 1
   fi
 
-  module_dir="$ROOT_DIR/$module"
-  if [[ ! -d "$module_dir" ]]; then
-    echo "Module directory not found: $module_dir" >&2
-    exit 1
-  fi
+  package_one_module "$module"
+  exit 0
+fi
 
-  package_script="$module_dir/package.sh"
-  if [[ -f "$package_script" ]]; then
-    chmod +x "$package_script"
-    exec "$package_script"
-  fi
-
-  require_mvnw
-  exec "$ROOT_DIR/mvnw" -pl "$module" -am clean package -DskipTests
+if [[ "$command" == "package-all" ]]; then
+  for module in "${SUPPORTED_MODULES[@]}"; do
+    package_one_module "$module"
+  done
+  exit 0
 fi
 
 if [[ "$command" == "full-install" ]]; then

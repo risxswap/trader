@@ -44,7 +44,7 @@ logs
 !.vscode/
 
 ### Web frontend ###
-admin-web/node_modules/
+trader-admin/admin-web/node_modules/
 admin-web/dist/
 web/node_modules/
 web/dist/
@@ -52,7 +52,8 @@ web/dist/
 
 ### Obsidian ###
 docs/.obsidian
-
+dist/*
+node_modules/*
 ### Tools / Trae ###
 .tools/
 .worktrees/
