@@ -1,8 +1,10 @@
 package cc.riskswap.trader.admin.service;
 
+import cc.riskswap.trader.admin.common.model.ErrorCode;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.TaskLogDto;
 import cc.riskswap.trader.admin.common.model.query.TaskLogQuery;
+import cc.riskswap.trader.admin.exception.Warning;
 import cc.riskswap.trader.base.dao.TaskLogDao;
 import cc.riskswap.trader.base.dao.entity.TaskLog;
 import cn.hutool.core.bean.BeanUtil;
@@ -44,6 +46,14 @@ public class TaskLogService {
         TaskLog log = taskLogDao.getById(id);
         if (log == null) return null;
         return BeanUtil.copyProperties(log, TaskLogDto.class);
+    }
+
+    public void delete(Long id) {
+        TaskLog log = taskLogDao.getById(id);
+        if (log == null) {
+            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "执行历史不存在");
+        }
+        taskLogDao.removeById(id);
     }
 
     public Long startTask(String taskName, String taskGroup) {

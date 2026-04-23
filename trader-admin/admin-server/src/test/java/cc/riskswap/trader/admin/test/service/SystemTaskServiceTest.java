@@ -11,6 +11,8 @@ import cc.riskswap.trader.admin.common.model.query.SystemTaskListQuery;
 import cc.riskswap.trader.admin.common.model.query.TaskDefinitionListQuery;
 import cc.riskswap.trader.base.dao.InvestmentDao;
 import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.TaskLogDao;
+import cc.riskswap.trader.base.dao.entity.Investment;
 import cc.riskswap.trader.base.dao.entity.SystemTask;
 import cc.riskswap.trader.admin.service.SystemTaskService;
 import cc.riskswap.trader.base.task.TraderTaskRefreshMessage;
@@ -26,6 +28,7 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SystemTaskServiceTest {
@@ -34,12 +37,189 @@ public class SystemTaskServiceTest {
     private static final String SAMPLE_DEFAULT_PARAMS_JSON = "{\"fullSync\":true}";
 
     @Test
-    void should_list_tasks_as_page_dto() {
+    void should_fill_last_execution_ms_from_latest_task_log() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> page = new Page<>(1, 10);
+        page.setTotal(1);
+        page.setRecords(List.of(sampleTask()));
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
+        Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 65000L));
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertEquals(65000L, result.getItems().get(0).getLastExecutionMs());
+    }
+
+    @Test
+    void should_leave_last_execution_ms_null_when_latest_log_has_no_duration() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> page = new Page<>(1, 10);
+        page.setTotal(1);
+        page.setRecords(List.of(sampleTask()));
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
+        Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertNull(result.getItems().get(0).getLastExecutionMs());
+    }
+
+    @Test
+    void should_leave_investment_last_execution_ms_null() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> systemPage = new Page<>(1, 10);
+        systemPage.setTotal(0);
+        systemPage.setRecords(List.of());
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(systemPage);
+
+        Investment investment = new Investment();
+        investment.setId(11);
+        investment.setName("趋势策略");
+        investment.setCron("0 */5 * * * ?");
+        investment.setStatus("RUNNING");
+        investment.setUpdatedAt(OffsetDateTime.parse("2026-04-23T10:00:00+08:00"));
+        investment.setCreatedAt(OffsetDateTime.parse("2026-04-23T09:00:00+08:00"));
+        Page<Investment> investmentPage = new Page<>(1, 100);
+        investmentPage.setTotal(1);
+        investmentPage.setRecords(List.of(investment));
+        Mockito.when(investmentDao.pageQuery(Mockito.any())).thenReturn(investmentPage);
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+        query.setIncludeInvestment(true);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertEquals(1, result.getItems().size());
+        Assertions.assertEquals("INVESTMENT", result.getItems().get(0).getSourceType());
+        Assertions.assertNull(result.getItems().get(0).getLastExecutionMs());
+        Mockito.verifyNoInteractions(taskLogDao);
+    }
+
+    @Test
+    void should_aggregate_execution_count_for_system_tasks() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> page = new Page<>(1, 10);
+        page.setTotal(1);
+        page.setRecords(List.of(sampleTask()));
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertEquals(3L, result.getItems().get(0).getExecutionCount());
+    }
+
+    @Test
+    void should_default_execution_count_to_zero_when_task_has_no_logs() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> page = new Page<>(1, 10);
+        page.setTotal(1);
+        page.setRecords(List.of(sampleTask()));
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertEquals(0L, result.getItems().get(0).getExecutionCount());
+    }
+
+    @Test
+    void should_default_investment_execution_count_to_zero_without_log_aggregation() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
+
+        Page<SystemTask> systemPage = new Page<>(1, 10);
+        systemPage.setTotal(0);
+        systemPage.setRecords(List.of());
+        Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(systemPage);
+
+        Investment investment = new Investment();
+        investment.setId(11);
+        investment.setName("趋势策略");
+        investment.setCron("0 */5 * * * ?");
+        investment.setStatus("RUNNING");
+        investment.setUpdatedAt(OffsetDateTime.parse("2026-04-23T10:00:00+08:00"));
+        investment.setCreatedAt(OffsetDateTime.parse("2026-04-23T09:00:00+08:00"));
+        Page<Investment> investmentPage = new Page<>(1, 100);
+        investmentPage.setTotal(1);
+        investmentPage.setRecords(List.of(investment));
+        Mockito.when(investmentDao.pageQuery(Mockito.any())).thenReturn(investmentPage);
+
+        SystemTaskListQuery query = new SystemTaskListQuery();
+        query.setPageNo(1);
+        query.setPageSize(10);
+        query.setIncludeInvestment(true);
+
+        PageDto<SystemTaskDto> result = systemTaskService.list(query);
+
+        Assertions.assertEquals(1, result.getItems().size());
+        Assertions.assertEquals("INVESTMENT", result.getItems().get(0).getSourceType());
+        Assertions.assertEquals(0L, result.getItems().get(0).getExecutionCount());
+        Mockito.verifyNoInteractions(taskLogDao);
+    }
+
+    @Test
+    void should_list_tasks_as_page_dto() {
+        SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         SystemTask task = sampleTask();
         Page<SystemTask> page = new Page<>(2, 5);
@@ -65,10 +245,11 @@ public class SystemTaskServiceTest {
     @Test
     void should_get_task_detail() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         SystemTask task = sampleTask();
         Mockito.when(systemTaskDao.getById(1L)).thenReturn(task);
@@ -83,12 +264,13 @@ public class SystemTaskServiceTest {
     @Test
     void should_update_task_params_and_publish_task_updated_message() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         SystemTask task = sampleTask();
         task.setVersion(7L);
@@ -127,12 +309,13 @@ public class SystemTaskServiceTest {
     @Test
     void should_publish_task_trigger_message_when_triggering_task() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         SystemTask task = sampleTask();
         task.setVersion(3L);
@@ -156,6 +339,7 @@ public class SystemTaskServiceTest {
     @Test
     void should_read_param_schema_and_default_params_from_redis_definitions() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
@@ -165,7 +349,7 @@ public class SystemTaskServiceTest {
         Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync"))
                 .thenReturn(definitionJson("COLLECTOR", "fundSync", "同步基金", "0 0 1 * * ?"));
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         List<TaskDefinitionDto> definitions = systemTaskService.definitions(new TaskDefinitionListQuery());
 
@@ -178,6 +362,7 @@ public class SystemTaskServiceTest {
     @Test
     void should_create_instance_from_definition_and_publish_created_message() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
@@ -185,7 +370,7 @@ public class SystemTaskServiceTest {
         Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         String json = definitionJson("COLLECTOR", "fundSync", "同步基金", "0 0 1 * * ?");
         Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync")).thenReturn(json);
@@ -224,12 +409,13 @@ public class SystemTaskServiceTest {
     @Test
     void should_reject_duplicate_creation_for_non_strategy_task() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
         Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         String json = "{\"taskType\":\"COLLECTOR\",\"taskCode\":\"fundSync\",\"taskName\":\"同步基金\",\"defaultCron\":\"0 0 1 * * ?\",\"defaultEnabled\":true}";
         Mockito.when(ops.get("trader:task:def:COLLECTOR:fundSync")).thenReturn(json);
@@ -255,6 +441,7 @@ public class SystemTaskServiceTest {
     @Test
     void should_generate_instance_task_code_for_strategy_task_creation() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
@@ -262,7 +449,7 @@ public class SystemTaskServiceTest {
         Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         String json = "{\"taskType\":\"STRATEGY\",\"taskCode\":\"relativeStrength\",\"taskName\":\"相对强弱策略\",\"defaultCron\":\"0 0/1 * * * ?\",\"defaultEnabled\":true}";
         Mockito.when(ops.get("trader:task:def:STRATEGY:relativeStrength")).thenReturn(json);
@@ -291,6 +478,7 @@ public class SystemTaskServiceTest {
     @Test
     void should_create_distinct_instance_codes_for_repeated_strategy_creation() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = Mockito.mock(ValueOperations.class);
@@ -298,7 +486,7 @@ public class SystemTaskServiceTest {
         Mockito.when(stringRedisTemplate.opsForValue()).thenReturn(ops);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         String json = "{\"taskType\":\"STRATEGY\",\"taskCode\":\"relativeStrength\",\"taskName\":\"相对强弱策略\",\"defaultCron\":\"0 0/1 * * * ?\",\"defaultEnabled\":true}";
         Mockito.when(ops.get("trader:task:def:STRATEGY:relativeStrength")).thenReturn(json);
@@ -334,12 +522,13 @@ public class SystemTaskServiceTest {
     @Test
     void should_delete_instance_and_publish_deleted_message() {
         SystemTaskDao systemTaskDao = Mockito.mock(SystemTaskDao.class);
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
         TraderTaskRefreshPublisher refreshPublisher = Mockito.mock(TraderTaskRefreshPublisher.class);
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
         Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         InvestmentDao investmentDao = Mockito.mock(InvestmentDao.class);
-        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, refreshPublisher, stringRedisTemplate, investmentDao);
+        SystemTaskService systemTaskService = new SystemTaskService(systemTaskDao, taskLogDao, refreshPublisher, stringRedisTemplate, investmentDao);
 
         SystemTask task = sampleTask();
         Mockito.when(systemTaskDao.getById(1L)).thenReturn(task);

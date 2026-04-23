@@ -12,6 +12,7 @@ import cc.riskswap.trader.admin.common.model.query.SystemTaskListQuery;
 import cc.riskswap.trader.admin.common.model.query.TaskDefinitionListQuery;
 import cc.riskswap.trader.base.dao.InvestmentDao;
 import cc.riskswap.trader.base.dao.SystemTaskDao;
+import cc.riskswap.trader.base.dao.TaskLogDao;
 import cc.riskswap.trader.base.dao.entity.Investment;
 import cc.riskswap.trader.base.dao.entity.SystemTask;
 import cc.riskswap.trader.admin.exception.Warning;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SystemTaskService {
     private final SystemTaskDao systemTaskDao;
+    private final TaskLogDao taskLogDao;
     private final TraderTaskRefreshPublisher traderTaskRefreshPublisher;
     private final StringRedisTemplate stringRedisTemplate;
     private final InvestmentDao investmentDao;
@@ -86,8 +89,40 @@ public class SystemTaskService {
             result.setTotal(result.getTotal() + invPage.getTotal());
         }
 
+        applyExecutionSummary(items);
         result.setItems(items);
         return result;
+    }
+
+    private void applyExecutionSummary(List<SystemTaskDto> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        List<String> taskCodes = items.stream()
+                .filter(item -> "SYSTEM".equals(item.getSourceType()))
+                .map(SystemTaskDto::getTaskCode)
+                .filter(StrUtil::isNotBlank)
+                .toList();
+        Map<String, Long> counts = taskCodes.isEmpty() ? Map.of() : taskLogDao.countByTaskGroups(taskCodes);
+        Map<String, Long> latestExecutionMs = taskCodes.isEmpty() ? Map.of() : taskLogDao.latestExecutionMsByTaskGroups(taskCodes);
+        items.forEach(item -> {
+            item.setExecutionCount(resolveExecutionCount(item, counts));
+            item.setLastExecutionMs(resolveLastExecutionMs(item, latestExecutionMs));
+        });
+    }
+
+    private long resolveExecutionCount(SystemTaskDto item, Map<String, Long> counts) {
+        if (!"SYSTEM".equals(item.getSourceType())) {
+            return 0L;
+        }
+        return counts.getOrDefault(item.getTaskCode(), 0L);
+    }
+
+    private Long resolveLastExecutionMs(SystemTaskDto item, Map<String, Long> latestExecutionMs) {
+        if (!"SYSTEM".equals(item.getSourceType())) {
+            return null;
+        }
+        return latestExecutionMs.get(item.getTaskCode());
     }
 
     public List<TaskDefinitionDto> definitions(TaskDefinitionListQuery query) {

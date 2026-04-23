@@ -64,17 +64,18 @@
         <el-table-column label="traceId" min-width="180">
           <template #default="{ row }">{{ row.traceId || '-' }}</template>
         </el-table-column>
-        <el-table-column label="执行耗时" width="120" align="center">
-          <template #default="{ row }">{{ row.executionMs ?? '-' }}</template>
+        <el-table-column label="执行耗时" width="140" align="center">
+          <template #default="{ row }">{{ formatExecutionDuration(row.executionMs) }}</template>
         </el-table-column>
         <el-table-column label="备注 / 错误" min-width="260">
           <template #default="{ row }">
             <div class="secondary-cell secondary-cell--clamp">{{ row.remark || row.errorMsg || row.content || '-' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right" align="center">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button link type="primary" @click="showLogDetail(row)">查看详情</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -112,6 +113,10 @@
             <div class="detail-label">结束时间</div>
             <div class="detail-value">{{ formatTime(currentLog.endTime) }}</div>
           </div>
+          <div class="detail-card">
+            <div class="detail-label">执行耗时</div>
+            <div class="detail-value">{{ formatExecutionDuration(currentLog.executionMs) }}</div>
+          </div>
         </div>
 
         <div v-if="currentLog.remark" class="detail-section">
@@ -134,10 +139,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import { getSystemTaskDetail, type SystemTaskDto } from '../../services/systemTask'
-import { getTaskLogDetail, listTaskLogs, type TaskLogDto, type TaskLogQuery } from '../../services/taskLog'
+import { deleteTaskLog, getTaskLogDetail, listTaskLogs, type TaskLogDto, type TaskLogQuery } from '../../services/taskLog'
+import { formatExecutionDuration } from '../../utils/taskLog'
 
 const route = useRoute()
 const router = useRouter()
@@ -211,6 +217,33 @@ const showLogDetail = async (row: TaskLogDto) => {
     ElMessage.error(res.message || '获取执行详情失败')
   } catch (error: any) {
     ElMessage.error(error.message || '获取执行详情失败')
+  }
+}
+
+const handleDelete = async (row: TaskLogDto) => {
+  try {
+    await ElMessageBox.confirm('删除后不可恢复，确认删除该执行历史吗？', '删除确认', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+
+    const res = await deleteTaskLog({ id: row.id })
+    if (res.code !== 200) {
+      throw new Error(res.message || '删除执行历史失败')
+    }
+
+    if (logs.value.length === 1 && query.pageNo > 1) {
+      query.pageNo -= 1
+    }
+
+    ElMessage.success('删除成功')
+    await loadLogs()
+  } catch (error: any) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+    ElMessage.error(error?.message || '删除执行历史失败')
   }
 }
 
@@ -389,7 +422,7 @@ onMounted(async () => {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 

@@ -20,6 +20,8 @@ public class SystemTaskDto {
     private String paramsJson;
     private String defaultParamsJson;
     private Long version;
+    private Long executionCount;
+    private Long lastExecutionMs;
     private String remark;
     private OffsetDateTime updatedAt;
     private OffsetDateTime createdAt;

@@ -175,6 +175,7 @@ import { Search } from '@element-plus/icons-vue'
 import { listTaskLogs, type TaskLogQuery, type TaskLogDto } from '../../services/taskLog'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
+import { formatExecutionDuration } from '../../utils/taskLog'
 
 const loading = ref(false)
 const tableData = ref<TaskLogDto[]>([])
@@ -295,8 +296,8 @@ const getStatusLabel = (status?: string) => {
 }
 
 const getExecutionText = (executionMs?: number) => {
-  if (executionMs === undefined || executionMs === null) return '耗时 -'
-  return `耗时 ${executionMs} ms`
+  const formatted = formatExecutionDuration(executionMs)
+  return formatted === '-' ? '耗时 -' : `耗时 ${formatted}`
 }
 
 onMounted(() => {

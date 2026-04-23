@@ -105,6 +105,16 @@
             <el-tag :type="getResultType(row.result)" size="small">{{ getResultLabel(row.result) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="执行次数" width="100" align="center">
+          <template #default="{ row }">
+            {{ row.executionCount ?? 0 }}
+          </template>
+        </el-table-column>
+        <el-table-column label="最后执行耗时" width="140" align="center">
+          <template #default="{ row }">
+            {{ formatExecutionDuration(row.lastExecutionMs) }}
+          </template>
+        </el-table-column>
         <el-table-column label="任务参数" min-width="280">
           <template #default="{ row }">
             <div class="secondary-cell secondary-cell--clamp">
@@ -309,6 +319,7 @@ import {
   type TaskParamSchemaDto,
   type TaskDefinitionDto
 } from '../../services/systemTask'
+import { formatExecutionDuration } from '../../utils/taskLog'
 
 const DEFAULT_CREATE_CRON = '0 0 9 * * ?'
 

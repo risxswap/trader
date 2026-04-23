@@ -1,5 +1,6 @@
 package cc.riskswap.trader.admin.test.service;
 
+import cc.riskswap.trader.admin.exception.Warning;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.TaskLogDto;
 import cc.riskswap.trader.admin.common.model.query.TaskLogQuery;
@@ -16,6 +17,32 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 class TaskLogServiceTest {
+
+    @Test
+    void should_delete_task_log_by_id() {
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TaskLogService taskLogService = new TaskLogService(taskLogDao);
+
+        TaskLog taskLog = new TaskLog();
+        taskLog.setId(1L);
+        Mockito.when(taskLogDao.getById(1L)).thenReturn(taskLog);
+
+        taskLogService.delete(1L);
+
+        Mockito.verify(taskLogDao).removeById(1L);
+    }
+
+    @Test
+    void should_throw_warning_when_deleting_missing_task_log() {
+        TaskLogDao taskLogDao = Mockito.mock(TaskLogDao.class);
+        TaskLogService taskLogService = new TaskLogService(taskLogDao);
+
+        Mockito.when(taskLogDao.getById(99L)).thenReturn(null);
+
+        Warning warning = Assertions.assertThrows(Warning.class, () -> taskLogService.delete(99L));
+
+        Assertions.assertEquals("执行历史不存在", warning.getMessage());
+    }
 
     @Test
     void should_query_task_logs_by_task_code_and_task_name() {

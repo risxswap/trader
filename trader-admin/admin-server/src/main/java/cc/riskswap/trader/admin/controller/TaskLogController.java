@@ -3,6 +3,7 @@ package cc.riskswap.trader.admin.controller;
 import cc.riskswap.trader.admin.common.model.ResData;
 import cc.riskswap.trader.admin.common.model.dto.PageDto;
 import cc.riskswap.trader.admin.common.model.dto.TaskLogDto;
+import cc.riskswap.trader.admin.common.model.param.TaskLogDeleteParam;
 import cc.riskswap.trader.admin.common.model.query.TaskLogQuery;
 import cc.riskswap.trader.admin.service.TaskLogService;
 import lombok.RequiredArgsConstructor;
@@ -22,5 +23,11 @@ public class TaskLogController {
     @GetMapping("/{id}")
     public ResData<TaskLogDto> get(@PathVariable Long id) {
         return ResData.success(taskLogService.getDetail(id));
+    }
+
+    @PostMapping("/delete")
+    public ResData<Void> delete(@RequestBody TaskLogDeleteParam param) {
+        taskLogService.delete(param.getId());
+        return ResData.success();
     }
 }

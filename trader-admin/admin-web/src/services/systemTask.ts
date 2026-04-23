@@ -28,6 +28,8 @@ export interface SystemTaskDto {
   defaultParamsJson?: string
   remark?: string
   version?: number
+  executionCount?: number
+  lastExecutionMs?: number
   updatedAt?: string
   createdAt?: string
 }
