@@ -20,7 +20,9 @@ class PackageScriptStructureTest {
         assertTrue(script.contains("set -euo pipefail"));
         assertTrue(script.contains("ROOT_DIR="));
         assertTrue(script.contains("ARTIFACT_ID="));
-        assertTrue(script.contains("./mvnw -DskipTests package"));
+        assertTrue(script.contains("-f \"$ROOT_DIR/../pom.xml\""));
+        assertTrue(script.contains("-pl trader-collector -am -DskipTests package"));
+        assertFalse(script.contains("\"$MVNW\" -DskipTests package"));
         assertTrue(script.contains("PACKAGE_NAME=\"trader-collector\""));
         assertTrue(script.contains("PKG_DIR=\"${DIST_DIR}/${PACKAGE_NAME}\""));
         assertTrue(script.contains("TAR_PATH=\"${DIST_DIR}/${PACKAGE_NAME}.tar.gz\""));

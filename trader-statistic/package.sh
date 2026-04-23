@@ -16,7 +16,7 @@ fi
 chmod +x "$MVNW"
 
 PACKAGE_NAME="trader-statistic"
-"$MVNW" -DskipTests package
+"$MVNW" -f "$ROOT_DIR/../pom.xml" -pl trader-statistic -am -DskipTests package
 
 JAR_PATH="$(ls -1 target/*.jar | grep -v 'original-' | head -n 1 || true)"
 if [[ -z "${JAR_PATH}" ]]; then

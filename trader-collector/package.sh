@@ -17,7 +17,7 @@ chmod +x "$MVNW"
 
 PACKAGE_NAME="trader-collector"
 ARTIFACT_ID="$("$MVNW" -q -DforceStdout help:evaluate -Dexpression=project.artifactId)"
-"$MVNW" -DskipTests package
+"$MVNW" -f "$ROOT_DIR/../pom.xml" -pl trader-collector -am -DskipTests package
 
 JAR_PATH="$(ls -1 target/*.jar | grep -v 'original-' | head -n 1 || true)"
 if [[ -z "${JAR_PATH}" ]]; then
