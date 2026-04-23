@@ -78,6 +78,46 @@ public class NodeServiceTest {
     }
 
     @Test
+    void shouldTreatNumericCollectedAtInNodeMonitorHashAsOnline() {
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        NodeDao nodeDao = Mockito.mock(NodeDao.class);
+        NodeGroupDao nodeGroupDao = Mockito.mock(NodeGroupDao.class);
+        NodeMonitorDao nodeMonitorDao = Mockito.mock(NodeMonitorDao.class);
+        NodeService nodeService = new NodeService(stringRedisTemplate, nodeMonitorDao, nodeDao, nodeGroupDao);
+
+        long collectedAt = System.currentTimeMillis() - 10_000L;
+        String monitorJson = """
+                {
+                  "nodeId":"numeric-monitor-node",
+                  "nodeType":"statistic",
+                  "nodeName":"统计服务",
+                  "collectedAt":%d,
+                  "hostname":"statistic-host",
+                  "primaryIp":"172.31.0.2",
+                  "cpuLoad":0.0113,
+                  "physicalMemoryTotal":16154390528,
+                  "physicalMemoryAvailable":631619584,
+                  "diskTotal":4542971850752,
+                  "diskAvailable":1547027345408
+                }
+                """.formatted(collectedAt);
+
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        Mockito.when(hashOperations.entries("node:monitor"))
+                .thenReturn(Map.of("numeric-monitor-node", monitorJson));
+        Mockito.when(nodeDao.list()).thenReturn(Collections.emptyList());
+        Mockito.when(nodeGroupDao.list()).thenReturn(List.of(pendingGroup()));
+
+        List<NodeStatusDto> result = nodeService.getAllNodes();
+
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(collectedAt, result.get(0).getTimestamp());
+        Assertions.assertTrue(result.get(0).getOnline());
+    }
+
+    @Test
     void shouldFallbackToLegacyNodeStatusKeysWhenMonitorHashEmpty() {
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         @SuppressWarnings("unchecked")
@@ -284,6 +324,83 @@ public class NodeServiceTest {
     }
 
     @Test
+    void shouldIgnoreDeletedNodeEvenWhenMonitorStillReported() {
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        NodeDao nodeDao = Mockito.mock(NodeDao.class);
+        NodeGroupDao nodeGroupDao = Mockito.mock(NodeGroupDao.class);
+        NodeMonitorDao nodeMonitorDao = Mockito.mock(NodeMonitorDao.class);
+        NodeService nodeService = new NodeService(stringRedisTemplate, nodeMonitorDao, nodeDao, nodeGroupDao);
+
+        Node deletedNode = new Node();
+        deletedNode.setId(101L);
+        deletedNode.setNodeId("deleted-node");
+        deletedNode.setNodeName("已删除节点");
+        deletedNode.setNodeType("collector");
+        deletedNode.setNodeGroupId(1L);
+        deletedNode.setApprovalStatus("DELETED");
+
+        String collectedAt = OffsetDateTime.now().minusSeconds(10).toString();
+        String monitorJson = """
+                {
+                  "nodeId":"deleted-node",
+                  "nodeType":"collector",
+                  "nodeName":"仍在上报的节点",
+                  "collectedAt":"%s",
+                  "hostname":"collector-host",
+                  "primaryIp":"10.0.0.9",
+                  "cpuLoad":0.22,
+                  "physicalMemoryTotal":200,
+                  "physicalMemoryAvailable":100,
+                  "diskTotal":100,
+                  "diskAvailable":50
+                }
+                """.formatted(collectedAt);
+
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        Mockito.when(hashOperations.entries("node:monitor"))
+                .thenReturn(Map.of("deleted-node", monitorJson));
+        Mockito.when(nodeDao.list()).thenReturn(List.of(deletedNode));
+        Mockito.when(nodeGroupDao.list()).thenReturn(List.of(pendingGroup()));
+
+        List<NodeStatusDto> result = nodeService.getAllNodes();
+
+        Assertions.assertTrue(result.isEmpty());
+        Mockito.verify(nodeDao, Mockito.never()).save(Mockito.any(Node.class));
+    }
+
+    @Test
+    void shouldMarkNodeDeletedAndClearRealtimeCaches() {
+        StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
+        @SuppressWarnings("unchecked")
+        HashOperations<String, Object, Object> hashOperations = Mockito.mock(HashOperations.class);
+        NodeDao nodeDao = Mockito.mock(NodeDao.class);
+        NodeGroupDao nodeGroupDao = Mockito.mock(NodeGroupDao.class);
+        NodeMonitorDao nodeMonitorDao = Mockito.mock(NodeMonitorDao.class);
+        NodeService nodeService = new NodeService(stringRedisTemplate, nodeMonitorDao, nodeDao, nodeGroupDao);
+
+        Node node = new Node();
+        node.setId(100L);
+        node.setNodeId("node-to-delete");
+        node.setApprovalStatus("APPROVED");
+
+        Mockito.when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        Mockito.when(nodeDao.getById(100L)).thenReturn(node);
+
+        nodeService.delete(100L);
+
+        ArgumentCaptor<Node> captor = ArgumentCaptor.forClass(Node.class);
+        Mockito.verify(nodeDao).updateById(captor.capture());
+        Node updatedNode = captor.getValue();
+        Assertions.assertEquals(100L, updatedNode.getId());
+        Assertions.assertEquals("DELETED", updatedNode.getApprovalStatus());
+        Assertions.assertNotNull(updatedNode.getUpdatedAt());
+        Mockito.verify(hashOperations).delete("node:monitor", "node-to-delete");
+        Mockito.verify(stringRedisTemplate).delete("node:status:node-to-delete");
+    }
+
+    @Test
     void shouldCreateNodeGroup() {
         StringRedisTemplate stringRedisTemplate = Mockito.mock(StringRedisTemplate.class);
         NodeDao nodeDao = Mockito.mock(NodeDao.class);
@@ -369,7 +486,7 @@ public class NodeServiceTest {
         group.setIsDefaultPending(false);
 
         Mockito.when(nodeGroupDao.getById(2L)).thenReturn(group);
-        Mockito.when(nodeDao.countByNodeGroupId(2L)).thenReturn(2L);
+        Mockito.when(nodeDao.countByNodeGroupIdExcludingApprovalStatus(2L, "DELETED")).thenReturn(2L);
 
         Assertions.assertThrows(Warning.class, () -> nodeService.deleteGroup(2L));
         Mockito.verify(nodeGroupDao, Mockito.never()).removeById(Mockito.anyLong());
@@ -389,7 +506,7 @@ public class NodeServiceTest {
         group.setIsDefaultPending(false);
 
         Mockito.when(nodeGroupDao.getById(3L)).thenReturn(group);
-        Mockito.when(nodeDao.countByNodeGroupId(3L)).thenReturn(0L);
+        Mockito.when(nodeDao.countByNodeGroupIdExcludingApprovalStatus(3L, "DELETED")).thenReturn(0L);
 
         nodeService.deleteGroup(3L);
 

@@ -48,6 +48,7 @@ public class NodeService {
     private static final long OFFLINE_THRESHOLD_MS = 60000;
     private static final String APPROVAL_PENDING = "PENDING";
     private static final String APPROVAL_APPROVED = "APPROVED";
+    private static final String APPROVAL_DELETED = "DELETED";
 
     public List<NodeStatusDto> getAllNodes() {
         List<NodeGroup> groups = nodeGroupDao.list();
@@ -57,23 +58,30 @@ public class NodeService {
                 .filter(item -> Boolean.TRUE.equals(item.getIsDefaultPending()))
                 .findFirst()
                 .orElseThrow(() -> new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "待审批分组不存在"));
-        List<Node> metadataNodes = nodeDao.list();
-        Map<String, Node> metadataMap = metadataNodes.stream()
+        List<Node> allMetadataNodes = nodeDao.list();
+        Map<String, Node> metadataMap = allMetadataNodes.stream()
                 .filter(item -> StrUtil.isNotBlank(item.getNodeId()))
                 .collect(Collectors.toMap(Node::getNodeId, item -> item, (left, right) -> left));
+        List<Node> metadataNodes = allMetadataNodes.stream()
+                .filter(this::isActiveNode)
+                .toList();
         Map<String, NodeStatusDto> nodeMap = new LinkedHashMap<>();
 
         Map<Object, Object> nodeMonitors = stringRedisTemplate.opsForHash().entries(NODE_MONITOR_KEY);
         if (nodeMonitors != null && !nodeMonitors.isEmpty()) {
             for (NodeStatusDto node : convertMonitorNodes(nodeMonitors)) {
-                mergeMonitorNode(node, metadataMap, groupMap, pendingGroup);
-                nodeMap.put(node.getNodeId(), node);
+                if (mergeMonitorNode(node, metadataMap, groupMap, pendingGroup)) {
+                    nodeMap.put(node.getNodeId(), node);
+                }
             }
         } else {
             Set<String> keys = stringRedisTemplate.keys(NODE_STATUS_PREFIX + "*");
             if (keys != null && !keys.isEmpty()) {
                 long now = System.currentTimeMillis();
                 for (String key : keys) {
+                    if (key == null) {
+                        continue;
+                    }
                     String json = stringRedisTemplate.opsForValue().get(key);
                     if (json == null) {
                         continue;
@@ -84,8 +92,9 @@ public class NodeService {
                     } else {
                         node.setOnline(false);
                     }
-                    mergeMonitorNode(node, metadataMap, groupMap, pendingGroup);
-                    nodeMap.put(node.getNodeId(), node);
+                    if (mergeMonitorNode(node, metadataMap, groupMap, pendingGroup)) {
+                        nodeMap.put(node.getNodeId(), node);
+                    }
                 }
             }
         }
@@ -103,10 +112,7 @@ public class NodeService {
     }
 
     public NodeStatusDto getNode(Long id) {
-        Node node = nodeDao.getById(id);
-        if (node == null) {
-            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点不存在");
-        }
+        Node node = requireActiveNode(id);
         return getAllNodes().stream()
                 .filter(item -> id.equals(item.getId()))
                 .findFirst()
@@ -115,6 +121,7 @@ public class NodeService {
 
     public List<NodeGroupDto> getGroups() {
         Map<Long, Long> nodeCountMap = nodeDao.listAll().stream()
+                .filter(this::isActiveNode)
                 .filter(item -> item.getNodeGroupId() != null)
                 .collect(Collectors.groupingBy(Node::getNodeGroupId, Collectors.counting()));
         return nodeGroupDao.listAll().stream()
@@ -162,17 +169,14 @@ public class NodeService {
         if (Boolean.TRUE.equals(group.getIsDefaultPending())) {
             throw new Warning(ErrorCode.BAD_REQUEST.code(), "默认待审批分组不允许删除");
         }
-        if (nodeDao.countByNodeGroupId(id) > 0) {
+        if (nodeDao.countByNodeGroupIdExcludingApprovalStatus(id, APPROVAL_DELETED) > 0) {
             throw new Warning(ErrorCode.BAD_REQUEST.code(), "分组下仍有节点，无法删除");
         }
         nodeGroupDao.removeById(id);
     }
 
     public void approve(NodeApproveParam param) {
-        Node node = nodeDao.getById(param.getId());
-        if (node == null) {
-            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点不存在");
-        }
+        Node node = requireActiveNode(param.getId());
         NodeGroup group = nodeGroupDao.getById(param.getNodeGroupId());
         if (group == null) {
             throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点分组不存在");
@@ -187,10 +191,7 @@ public class NodeService {
     }
 
     public void update(NodeParam param) {
-        Node node = nodeDao.getById(param.getId());
-        if (node == null) {
-            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点不存在");
-        }
+        Node node = requireActiveNode(param.getId());
         NodeGroup group = nodeGroupDao.getById(param.getNodeGroupId());
         if (group == null) {
             throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点分组不存在");
@@ -208,9 +209,14 @@ public class NodeService {
     }
 
     public void delete(Long id) {
-        if (!nodeDao.removeById(id)) {
-            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点不存在");
-        }
+        Node node = requireActiveNode(id);
+        Node updateNode = new Node();
+        updateNode.setId(node.getId());
+        updateNode.setApprovalStatus(APPROVAL_DELETED);
+        updateNode.setUpdatedAt(OffsetDateTime.now());
+        nodeDao.updateById(updateNode);
+        stringRedisTemplate.opsForHash().delete(NODE_MONITOR_KEY, node.getNodeId());
+        stringRedisTemplate.delete(NODE_STATUS_PREFIX + node.getNodeId());
     }
 
     private List<NodeStatusDto> convertMonitorNodes(Map<Object, Object> nodeMonitors) {
@@ -238,7 +244,10 @@ public class NodeService {
                     monitor.getLong("diskAvailable"),
                     monitor.getLong("diskTotal")
             ));
-            Long collectedAt = parseCollectedAtMillis(monitor.getStr("collectedAt"));
+            Long collectedAt = parseCollectedAtMillis(monitor.get("collectedAt"));
+            if (collectedAt == null) {
+                collectedAt = parseCollectedAtMillis(monitor.get("timestamp"));
+            }
             node.setTimestamp(collectedAt);
             node.setOnline(collectedAt != null && (now - collectedAt) <= OFFLINE_THRESHOLD_MS);
             nodes.add(node);
@@ -246,22 +255,25 @@ public class NodeService {
         return nodes;
     }
 
-    private void mergeMonitorNode(
+    private boolean mergeMonitorNode(
             NodeStatusDto node,
             Map<String, Node> metadataMap,
             Map<Long, NodeGroup> groupMap,
             NodeGroup pendingGroup
     ) {
         if (StrUtil.isBlank(node.getNodeId())) {
-            return;
+            return false;
         }
         Node metadata = metadataMap.get(node.getNodeId());
         if (metadata == null) {
             metadata = registerNode(node, pendingGroup);
             metadataMap.put(metadata.getNodeId(), metadata);
             groupMap.putIfAbsent(pendingGroup.getId(), pendingGroup);
+        } else if (isDeletedNode(metadata)) {
+            return false;
         }
         fillMetadata(node, metadata, groupMap.get(metadata.getNodeGroupId()));
+        return true;
     }
 
     private Node registerNode(NodeStatusDto node, NodeGroup pendingGroup) {
@@ -317,6 +329,22 @@ public class NodeService {
         node.setDiskUsage(0f);
         node.setOnline(false);
         return node;
+    }
+
+    private Node requireActiveNode(Long id) {
+        Node node = nodeDao.getById(id);
+        if (node == null || isDeletedNode(node)) {
+            throw new Warning(ErrorCode.RESOURCE_NOT_FOUND.code(), "节点不存在");
+        }
+        return node;
+    }
+
+    private boolean isActiveNode(Node node) {
+        return node != null && !isDeletedNode(node);
+    }
+
+    private boolean isDeletedNode(Node node) {
+        return node != null && APPROVAL_DELETED.equalsIgnoreCase(node.getApprovalStatus());
     }
 
     private NodeGroup findGroup(Long groupId) {
@@ -378,15 +406,26 @@ public class NodeService {
         return value.floatValue();
     }
 
-    private Long parseCollectedAtMillis(String collectedAt) {
-        if (collectedAt == null || collectedAt.isBlank()) {
+    private Long parseCollectedAtMillis(Object collectedAt) {
+        if (collectedAt == null) {
+            return null;
+        }
+        if (collectedAt instanceof Number number) {
+            return number.longValue();
+        }
+        String value = String.valueOf(collectedAt).trim();
+        if (value.isEmpty()) {
             return null;
         }
         try {
-            return OffsetDateTime.parse(collectedAt).toInstant().toEpochMilli();
+            return Long.parseLong(value);
         } catch (Exception e) {
-            log.warn("node monitor collectedAt parse failed: {}", collectedAt);
-            return null;
+            try {
+                return OffsetDateTime.parse(value).toInstant().toEpochMilli();
+            } catch (Exception ex) {
+                log.warn("node monitor collectedAt parse failed: {}", collectedAt);
+                return null;
+            }
         }
     }
 

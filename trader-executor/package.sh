@@ -14,8 +14,8 @@ if [[ ! -f "$MVNW" ]]; then
 fi
 chmod +x "$MVNW"
 
-ARTIFACT_ID="$("$MVNW" -q -DforceStdout help:evaluate -Dexpression=project.artifactId)"
 
+PACKAGE_NAME="trader-executor"
 "$MVNW" -f "$ROOT_DIR/../pom.xml" -pl trader-executor -am -DskipTests package
 
 JAR_PATH="$(ls -1 target/*.jar | grep -v 'original-' | head -n 1 || true)"
@@ -40,7 +40,7 @@ for required_file in "$APPLICATION_YML" "$LOGBACK_XML" "$DOCKER_COMPOSE"; do
 done
 
 DIST_DIR="$ROOT_DIR/target"
-PKG_DIR="${DIST_DIR}/${ARTIFACT_ID}"
+PKG_DIR="${DIST_DIR}/${PACKAGE_NAME}"
 rm -rf "$PKG_DIR"
 mkdir -p "$PKG_DIR"
 mkdir -p "${PKG_DIR}/config"
@@ -59,8 +59,8 @@ if ! jar tf "${PKG_DIR}/trader-executor.jar" >/dev/null 2>&1; then
   exit 1
 fi
 
-TAR_PATH="${DIST_DIR}/${ARTIFACT_ID}.tar.gz"
-tar -czf "$TAR_PATH" -C "$DIST_DIR" "${ARTIFACT_ID}"
+TAR_PATH="${DIST_DIR}/${PACKAGE_NAME}.tar.gz"
+tar -czf "$TAR_PATH" -C "$DIST_DIR" "${PACKAGE_NAME}"
 
 echo "Jar: ${PKG_DIR}/trader-executor.jar"
 ls -lh "${PKG_DIR}/trader-executor.jar"

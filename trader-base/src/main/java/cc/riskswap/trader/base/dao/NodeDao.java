@@ -27,4 +27,11 @@ public class NodeDao extends ServiceImpl<NodeMapper, Node> {
     public long countByNodeGroupId(Long nodeGroupId) {
         return lambdaQuery().eq(Node::getNodeGroupId, nodeGroupId).count();
     }
+
+    public long countByNodeGroupIdExcludingApprovalStatus(Long nodeGroupId, String approvalStatus) {
+        return lambdaQuery()
+                .eq(Node::getNodeGroupId, nodeGroupId)
+                .ne(Node::getApprovalStatus, approvalStatus)
+                .count();
+    }
 }
