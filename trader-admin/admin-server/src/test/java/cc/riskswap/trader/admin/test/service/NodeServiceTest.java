@@ -37,13 +37,13 @@ public class NodeServiceTest {
         NodeMonitorDao nodeMonitorDao = Mockito.mock(NodeMonitorDao.class);
         NodeService nodeService = new NodeService(stringRedisTemplate, nodeMonitorDao, nodeDao, nodeGroupDao);
 
-        String collectedAt = OffsetDateTime.now().minusSeconds(10).toString();
+        long collectedAt = System.currentTimeMillis() - 10_000L;
         String monitorJson = """
                 {
                   "nodeId":"a55eca68-5ed1-4ac8-8c94-01da1eef4faa",
                   "nodeType":"executor",
                   "nodeName":"执行器",
-                  "collectedAt":"%s",
+                  "collectedAt":%d,
                   "hostname":"ca04f23abf49",
                   "primaryIp":"172.22.0.2",
                   "cpuLoad":0.0103,
@@ -72,7 +72,7 @@ public class NodeServiceTest {
         Assertions.assertEquals(0.3811f, node.getMemoryUsage(), 0.0001f);
         Assertions.assertEquals(0.5856f, node.getDiskUsage(), 0.0001f);
         Assertions.assertTrue(node.getOnline());
-        Assertions.assertNotNull(node.getTimestamp());
+        Assertions.assertEquals(collectedAt, node.getTimestamp());
         Assertions.assertEquals("待审批", node.getNodeGroupName());
         Assertions.assertEquals("PENDING", node.getApprovalStatus());
     }
@@ -218,13 +218,13 @@ public class NodeServiceTest {
         existingNode.setHostname("executor-host");
         existingNode.setPrimaryIp("10.0.0.2");
 
-        String collectedAt = OffsetDateTime.now().minusSeconds(10).toString();
+        long collectedAt = System.currentTimeMillis() - 10_000L;
         String existingMonitorJson = """
                 {
                   "nodeId":"existing-node",
                   "nodeType":"collector",
                   "nodeName":"采集器上报名称",
-                  "collectedAt":"%s",
+                  "collectedAt":%d,
                   "hostname":"executor-host",
                   "primaryIp":"10.0.0.2",
                   "cpuLoad":0.12,
@@ -239,7 +239,7 @@ public class NodeServiceTest {
                   "nodeId":"new-node",
                   "nodeType":"collector",
                   "nodeName":"新采集器",
-                  "collectedAt":"%s",
+                  "collectedAt":%d,
                   "hostname":"collector-host",
                   "primaryIp":"10.0.0.3",
                   "cpuLoad":0.22,
@@ -341,13 +341,13 @@ public class NodeServiceTest {
         deletedNode.setNodeGroupId(1L);
         deletedNode.setApprovalStatus("DELETED");
 
-        String collectedAt = OffsetDateTime.now().minusSeconds(10).toString();
+        long collectedAt = System.currentTimeMillis() - 10_000L;
         String monitorJson = """
                 {
                   "nodeId":"deleted-node",
                   "nodeType":"collector",
                   "nodeName":"仍在上报的节点",
-                  "collectedAt":"%s",
+                  "collectedAt":%d,
                   "hostname":"collector-host",
                   "primaryIp":"10.0.0.9",
                   "cpuLoad":0.22,

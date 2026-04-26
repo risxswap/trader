@@ -11,11 +11,15 @@ import java.lang.management.ThreadMXBean;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.InetAddress;
+import java.nio.file.Files;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class HardwareMonitorService {
+    private static final Path MEMINFO_PATH = Path.of("/proc/meminfo");
 
     private final TraderNodeProperties nodeProperties;
 
@@ -53,13 +57,50 @@ public class HardwareMonitorService {
                 resolvePrimaryIp(),
                 toCpuLoad(osBean.getCpuLoad()),
                 osBean.getTotalMemorySize(),
-                osBean.getFreeMemorySize(),
+                resolveAvailableMemory(osBean, MEMINFO_PATH),
                 diskTotal,
                 diskAvailable,
                 runtimeMXBean.getUptime(),
                 Math.toIntExact(Math.min(Integer.MAX_VALUE, ProcessHandle.allProcesses().count())),
                 threadMXBean.getThreadCount()
         );
+    }
+
+    long resolveAvailableMemory(OperatingSystemMXBean osBean, Path memInfoPath) {
+        Long memAvailable = readMemAvailable(memInfoPath);
+        return memAvailable != null ? memAvailable : osBean.getFreeMemorySize();
+    }
+
+    Long readMemAvailable(Path memInfoPath) {
+        if (memInfoPath == null || !Files.isReadable(memInfoPath)) {
+            return null;
+        }
+        try {
+            return parseMemAvailable(Files.readAllLines(memInfoPath));
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    Long parseMemAvailable(List<String> lines) {
+        if (lines == null) {
+            return null;
+        }
+        for (String line : lines) {
+            if (line == null || !line.startsWith("MemAvailable:")) {
+                continue;
+            }
+            String[] parts = line.trim().split("\\s+");
+            if (parts.length < 2) {
+                return null;
+            }
+            try {
+                return Long.parseLong(parts[1]) * 1024L;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private BigDecimal toCpuLoad(double cpuLoad) {

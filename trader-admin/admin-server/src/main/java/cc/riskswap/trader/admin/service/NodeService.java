@@ -419,13 +419,9 @@ public class NodeService {
         }
         try {
             return Long.parseLong(value);
-        } catch (Exception e) {
-            try {
-                return OffsetDateTime.parse(value).toInstant().toEpochMilli();
-            } catch (Exception ex) {
-                log.warn("node monitor collectedAt parse failed: {}", collectedAt);
-                return null;
-            }
+        } catch (NumberFormatException e) {
+            log.warn("node monitor collectedAt parse failed, expected epoch millis: {}", collectedAt);
+            return null;
         }
     }
 
