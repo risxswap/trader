@@ -92,7 +92,7 @@
           <template #default="{ row }">
             <div class="primary-cell">{{ getExecutionText(row.executionMs) }}</div>
             <div class="secondary-cell secondary-cell--clamp">
-              {{ row.errorMsg || row.content || '本次任务未返回额外执行内容' }}
+              {{ getLogSummary(row) }}
             </div>
           </template>
         </el-table-column>
@@ -150,11 +150,23 @@
             <div class="detail-value">{{ getExecutionText(currentDetail.executionMs) }}</div>
           </div>
           <div class="detail-card">
+            <div class="detail-label">同步/失败</div>
+            <div class="detail-value">{{ formatSyncedFailed(currentDetailParsed.syncedCount, currentDetailParsed.failedCount) }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-label">消息</div>
+            <div class="detail-value">{{ currentDetailParsed.message || '-' }}</div>
+          </div>
+          <div class="detail-card">
             <div class="detail-label">记录时间</div>
             <div class="detail-value">{{ formatTime(currentDetail.createdAt) }}</div>
           </div>
         </div>
 
+        <div v-if="currentDetailParsed.errorDetail" class="detail-section">
+          <div class="detail-section__title">失败详情</div>
+          <pre class="detail-pre">{{ formatJson(currentDetailParsed.errorDetail) }}</pre>
+        </div>
         <div v-if="currentDetail.content" class="detail-section">
           <div class="detail-section__title">执行内容</div>
           <pre class="detail-pre">{{ currentDetail.content }}</pre>
@@ -175,7 +187,7 @@ import { Search } from '@element-plus/icons-vue'
 import { listTaskLogs, type TaskLogQuery, type TaskLogDto } from '../../services/taskLog'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
-import { formatExecutionDuration } from '../../utils/taskLog'
+import { formatExecutionDuration, parseTaskLogContent, type ParsedTaskLogContent } from '../../utils/taskLog'
 
 const loading = ref(false)
 const tableData = ref<TaskLogDto[]>([])
@@ -193,6 +205,7 @@ const query = ref<TaskLogQuery>({
 
 const drawerVisible = ref(false)
 const currentDetail = ref<TaskLogDto | null>(null)
+const currentDetailParsed = computed<ParsedTaskLogContent>(() => parseTaskLogContent(currentDetail.value?.content))
 
 const totalPage = computed(() => {
   if (!total.value) return 1
@@ -218,6 +231,35 @@ const loadData = async () => {
     ElMessage.error(error.message || '获取列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+const getLogSummary = (row: TaskLogDto) => {
+  const parsed = parseTaskLogContent(row.content)
+  const countText = formatSyncedFailed(parsed.syncedCount, parsed.failedCount)
+  const message = parsed.message || row.errorMsg || ''
+  if (countText !== '-' && message) {
+    return `${countText} ${message}`
+  }
+  if (countText !== '-') {
+    return countText
+  }
+  if (message) {
+    return message
+  }
+  return row.content || '本次任务未返回额外执行内容'
+}
+
+const formatSyncedFailed = (synced?: number, failed?: number) => {
+  if (synced === undefined && failed === undefined) return '-'
+  return `${synced ?? 0}/${failed ?? 0}`
+}
+
+const formatJson = (value: any) => {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
   }
 }
 

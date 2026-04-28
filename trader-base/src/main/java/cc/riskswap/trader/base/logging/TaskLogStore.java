@@ -17,6 +17,10 @@ public class TaskLogStore {
     }
 
     public void writeFinished(String traceId, String status, Long costMs, String remark) {
-        taskLogDao.updateLogByTraceId(traceId, status, costMs, remark);
+        writeFinished(traceId, status, costMs, remark, null, null);
+    }
+
+    public void writeFinished(String traceId, String status, Long costMs, String remark, String content, String errorMsg) {
+        taskLogDao.updateLogByTraceId(traceId, status, costMs, remark, content, errorMsg);
     }
 }

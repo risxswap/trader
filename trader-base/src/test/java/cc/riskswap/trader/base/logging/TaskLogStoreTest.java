@@ -26,6 +26,6 @@ class TaskLogStoreTest {
 
         store.writeFinished("trace-1", "SUCCESS", 1200L, "done");
 
-        Mockito.verify(taskLogDao).updateLogByTraceId("trace-1", "SUCCESS", 1200L, "done");
+        Mockito.verify(taskLogDao).updateLogByTraceId("trace-1", "SUCCESS", 1200L, "done", null, null);
     }
 }

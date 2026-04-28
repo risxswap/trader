@@ -30,6 +30,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -144,8 +145,8 @@ public class TraderTaskAutoConfiguration {
             TraderTaskRegistry registry,
             StringRedisTemplate stringRedisTemplate,
             TraderTaskLock lock,
-            SystemTaskStatusStore systemTaskStatusStore,
-            TaskLogStore taskLogStore
+            @Nullable SystemTaskStatusStore systemTaskStatusStore,
+            @Nullable TaskLogStore taskLogStore
     ) {
         return new TraderTaskExecutor(registry, stringRedisTemplate, lock, systemTaskStatusStore, taskLogStore);
     }

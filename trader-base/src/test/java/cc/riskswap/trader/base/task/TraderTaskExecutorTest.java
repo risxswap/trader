@@ -1,12 +1,14 @@
 package cc.riskswap.trader.base.task;
 
 import cc.riskswap.trader.base.logging.TaskLogStore;
+import cn.hutool.json.JSONUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
@@ -15,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +49,11 @@ class TraderTaskExecutorTest {
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "RUNNING", null, null);
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "STOPPED", "SUCCESS", null);
         verify(taskLogStore).writeRunning(eq("同步基金"), eq("fundSync"), any(), anyString());
-        verify(taskLogStore).writeFinished(anyString(), eq("SUCCESS"), anyLong(), contains("triggerType=SCHEDULED"));
+        ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
+        verify(taskLogStore).writeFinished(anyString(), eq("SUCCESS"), anyLong(), contains("triggerType=SCHEDULED"), contentCaptor.capture(), isNull());
+        org.assertj.core.api.Assertions.assertThat(JSONUtil.parseObj(contentCaptor.getValue()).getLong("syncedCount")).isEqualTo(10L);
+        org.assertj.core.api.Assertions.assertThat(JSONUtil.parseObj(contentCaptor.getValue()).getLong("failedCount")).isEqualTo(2L);
+        org.assertj.core.api.Assertions.assertThat(JSONUtil.parseObj(contentCaptor.getValue()).getStr("message")).isEqualTo("done");
         org.assertj.core.api.Assertions.assertThat(output.getOut())
                 .contains("Trigger trader task execution")
                 .contains("fundSync");
@@ -77,8 +84,12 @@ class TraderTaskExecutorTest {
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "RUNNING", null, null);
         verify(statusStore).writeStatus("COLLECTOR", "fundSync", "STOPPED", "FAILED", null);
         verify(taskLogStore).writeRunning(eq("同步基金"), eq("fundSync"), any(), anyString());
-        verify(taskLogStore).writeFinished(anyString(), eq("FAILED"), anyLong(), contains("triggerType=SCHEDULED"));
-        verify(taskLogStore).writeFinished(anyString(), eq("FAILED"), anyLong(), contains("boom"));
+        ArgumentCaptor<String> failedContentCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> errorMsgCaptor = ArgumentCaptor.forClass(String.class);
+        verify(taskLogStore).writeFinished(anyString(), eq("FAILED"), anyLong(), contains("triggerType=SCHEDULED"), failedContentCaptor.capture(), errorMsgCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(JSONUtil.parseObj(failedContentCaptor.getValue()).getLong("syncedCount")).isEqualTo(3L);
+        org.assertj.core.api.Assertions.assertThat(JSONUtil.parseObj(failedContentCaptor.getValue()).getLong("failedCount")).isEqualTo(1L);
+        org.assertj.core.api.Assertions.assertThat(errorMsgCaptor.getValue()).contains("boom");
     }
 
     private static class SampleTask implements CollectorTask {
@@ -109,12 +120,17 @@ class TraderTaskExecutorTest {
 
         @Override
         public void execute(TraderTaskContext context) {
+            context.report().addSynced(10);
+            context.report().addFailed(2);
+            context.report().setMessage("done");
         }
     }
 
     private static class FailingTask extends SampleTask {
         @Override
         public void execute(TraderTaskContext context) {
+            context.report().addSynced(3);
+            context.report().addFailed(1);
             throw new IllegalStateException("boom");
         }
     }

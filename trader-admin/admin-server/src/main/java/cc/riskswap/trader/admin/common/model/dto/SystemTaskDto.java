@@ -22,6 +22,11 @@ public class SystemTaskDto {
     private Long version;
     private Long executionCount;
     private Long lastExecutionMs;
+    private String lastTraceId;
+    private Long lastSyncedCount;
+    private Long lastFailedCount;
+    private String lastMessage;
+    private String lastErrorMsg;
     private String remark;
     private OffsetDateTime updatedAt;
     private OffsetDateTime createdAt;

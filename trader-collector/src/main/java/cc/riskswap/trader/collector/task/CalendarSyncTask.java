@@ -44,6 +44,6 @@ public class CalendarSyncTask implements CollectorTask {
     @Override
     @TraderTaskLog("交易日历同步任务")
     public void execute(TraderTaskContext context) {
-        calendarService.syncCalendar();
+        calendarService.syncCalendar(context);
     }
 }

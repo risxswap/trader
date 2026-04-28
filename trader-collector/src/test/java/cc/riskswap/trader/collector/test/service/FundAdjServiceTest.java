@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.service.FundAdjService;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 
 @SpringBootTest
 public class FundAdjServiceTest {
@@ -13,6 +14,6 @@ public class FundAdjServiceTest {
 
     @Test
     public void syncBySymbol() {
-        fundAdjService.syncBySymbol();
+        fundAdjService.syncBySymbol(new TraderTaskContext());
     }
 }

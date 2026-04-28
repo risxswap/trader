@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.service.FundNavService;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 
 @SpringBootTest
 public class FundNavServiceTest {
@@ -19,6 +20,6 @@ public class FundNavServiceTest {
 
     @Test
     public void testSyncByNavDate() {
-        fundNavService.syncFundNav();
+        fundNavService.syncFundNav(new TraderTaskContext());
     }
 }

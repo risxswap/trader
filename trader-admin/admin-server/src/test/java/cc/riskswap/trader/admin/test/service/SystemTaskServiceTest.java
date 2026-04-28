@@ -51,6 +51,7 @@ public class SystemTaskServiceTest {
         Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
         Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
         Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 65000L));
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskListQuery query = new SystemTaskListQuery();
         query.setPageNo(1);
@@ -76,6 +77,7 @@ public class SystemTaskServiceTest {
         Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
         Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
         Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskListQuery query = new SystemTaskListQuery();
         query.setPageNo(1);
@@ -139,6 +141,7 @@ public class SystemTaskServiceTest {
         page.setRecords(List.of(sampleTask()));
         Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
         Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of("fundSync", 3L));
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskListQuery query = new SystemTaskListQuery();
         query.setPageNo(1);
@@ -163,6 +166,7 @@ public class SystemTaskServiceTest {
         page.setRecords(List.of(sampleTask()));
         Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
         Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskListQuery query = new SystemTaskListQuery();
         query.setPageNo(1);
@@ -226,6 +230,9 @@ public class SystemTaskServiceTest {
         page.setTotal(9);
         page.setRecords(List.of(task));
         Mockito.when(systemTaskDao.pageQuery(Mockito.any())).thenReturn(page);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskListQuery query = new SystemTaskListQuery();
         query.setPageNo(2);
@@ -253,6 +260,9 @@ public class SystemTaskServiceTest {
 
         SystemTask task = sampleTask();
         Mockito.when(systemTaskDao.getById(1L)).thenReturn(task);
+        Mockito.when(taskLogDao.countByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestExecutionMsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
+        Mockito.when(taskLogDao.latestLogsByTaskGroups(List.of("fundSync"))).thenReturn(Map.of());
 
         SystemTaskDto detail = systemTaskService.getDetail(1L);
 

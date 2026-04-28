@@ -75,6 +75,7 @@ public class TraderTaskExecutor {
         context.setParamsMap(paramsMap);
         context.setRunAt(OffsetDateTime.now());
         String traceId = UUID.randomUUID().toString();
+        context.setTraceId(traceId);
         LocalDateTime startedAt = LocalDateTime.now();
         long startedMs = System.currentTimeMillis();
 
@@ -91,14 +92,32 @@ public class TraderTaskExecutor {
                     taskType, taskCode, instance.getTaskName(), fireTimeEpochSec);
             sendStatus(instance, "STOPPED", "SUCCESS");
             if (taskLogStore != null) {
-                taskLogStore.writeFinished(traceId, "SUCCESS", System.currentTimeMillis() - startedMs,
-                        buildTaskLogRemark(context, taskType, taskCode, "SUCCESS", null));
+                if (context.getReport() == null || context.getReport().getMessage() == null || context.getReport().getMessage().isBlank()) {
+                    context.report().setMessage("完成");
+                }
+                taskLogStore.writeFinished(
+                        traceId,
+                        "SUCCESS",
+                        System.currentTimeMillis() - startedMs,
+                        buildTaskLogRemark(context, taskType, taskCode, "SUCCESS", null),
+                        JSONUtil.toJsonStr(context.report().toJson()),
+                        null
+                );
             }
         } catch (Exception e) {
             sendStatus(instance, "STOPPED", "FAILED");
             if (taskLogStore != null) {
-                taskLogStore.writeFinished(traceId, "FAILED", System.currentTimeMillis() - startedMs,
-                        buildTaskLogRemark(context, taskType, taskCode, "FAILED", e));
+                if (context.getReport() == null || context.getReport().getMessage() == null || context.getReport().getMessage().isBlank()) {
+                    context.report().setMessage("失败");
+                }
+                taskLogStore.writeFinished(
+                        traceId,
+                        "FAILED",
+                        System.currentTimeMillis() - startedMs,
+                        buildTaskLogRemark(context, taskType, taskCode, "FAILED", e),
+                        JSONUtil.toJsonStr(context.report().toJson()),
+                        buildErrorMsg(e)
+                );
             }
             log.error("Trader task execution failed taskType={} taskCode={} taskName={} fireTimeEpochSec={}",
                     taskType, taskCode, instance.getTaskName(), fireTimeEpochSec, e);
@@ -127,5 +146,16 @@ public class TraderTaskExecutor {
             builder.append(", error=").append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
         }
         return builder.toString();
+    }
+
+    private String buildErrorMsg(Exception e) {
+        if (e == null) {
+            return null;
+        }
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            return e.getClass().getSimpleName();
+        }
+        return e.getClass().getSimpleName() + ": " + message;
     }
 }

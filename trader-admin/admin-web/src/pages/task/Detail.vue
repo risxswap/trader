@@ -34,6 +34,15 @@
           <div class="section-subtitle">任务参数</div>
           <pre class="code-block">{{ taskDetail.paramsJson || '未配置任务参数' }}</pre>
         </div>
+        <div class="params-panel">
+          <div class="section-subtitle">最近一次执行摘要</div>
+          <el-descriptions :column="3" border>
+            <el-descriptions-item label="traceId">{{ taskDetail.lastTraceId || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="同步/失败">{{ formatSyncedFailed(taskDetail.lastSyncedCount, taskDetail.lastFailedCount) }}</el-descriptions-item>
+            <el-descriptions-item label="耗时">{{ formatExecutionDuration(taskDetail.lastExecutionMs) }}</el-descriptions-item>
+            <el-descriptions-item label="消息" :span="3">{{ taskDetail.lastMessage || taskDetail.lastErrorMsg || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
       </template>
       <el-empty v-else description="未找到任务详情" />
     </el-card>
@@ -69,7 +78,7 @@
         </el-table-column>
         <el-table-column label="备注 / 错误" min-width="260">
           <template #default="{ row }">
-            <div class="secondary-cell secondary-cell--clamp">{{ row.remark || row.errorMsg || row.content || '-' }}</div>
+            <div class="secondary-cell secondary-cell--clamp">{{ getLogSummary(row) }}</div>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
@@ -117,11 +126,23 @@
             <div class="detail-label">执行耗时</div>
             <div class="detail-value">{{ formatExecutionDuration(currentLog.executionMs) }}</div>
           </div>
+          <div class="detail-card">
+            <div class="detail-label">同步/失败</div>
+            <div class="detail-value">{{ formatSyncedFailed(currentLogParsed.syncedCount, currentLogParsed.failedCount) }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-label">消息</div>
+            <div class="detail-value">{{ currentLogParsed.message || '-' }}</div>
+          </div>
         </div>
 
         <div v-if="currentLog.remark" class="detail-section">
           <div class="detail-section__title">备注</div>
           <pre class="code-block">{{ currentLog.remark }}</pre>
+        </div>
+        <div v-if="currentLogParsed.errorDetail" class="detail-section">
+          <div class="detail-section__title">失败详情</div>
+          <pre class="code-block">{{ formatJson(currentLogParsed.errorDetail) }}</pre>
         </div>
         <div v-if="currentLog.content" class="detail-section">
           <div class="detail-section__title">执行内容</div>
@@ -143,7 +164,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import { getSystemTaskDetail, type SystemTaskDto } from '../../services/systemTask'
 import { deleteTaskLog, getTaskLogDetail, listTaskLogs, type TaskLogDto, type TaskLogQuery } from '../../services/taskLog'
-import { formatExecutionDuration } from '../../utils/taskLog'
+import { formatExecutionDuration, parseTaskLogContent, type ParsedTaskLogContent } from '../../utils/taskLog'
 
 const route = useRoute()
 const router = useRouter()
@@ -156,6 +177,7 @@ const logs = ref<TaskLogDto[]>([])
 const total = ref(0)
 const detailVisible = ref(false)
 const currentLog = ref<TaskLogDto | null>(null)
+const currentLogParsed = ref<ParsedTaskLogContent>({})
 
 const query = reactive<TaskLogQuery>({
   pageNo: 1,
@@ -211,12 +233,31 @@ const showLogDetail = async (row: TaskLogDto) => {
     const res = await getTaskLogDetail(row.id)
     if (res.code === 200) {
       currentLog.value = res.data || row
+      currentLogParsed.value = parseTaskLogContent(currentLog.value?.content)
       detailVisible.value = true
       return
     }
     ElMessage.error(res.message || '获取执行详情失败')
   } catch (error: any) {
     ElMessage.error(error.message || '获取执行详情失败')
+  }
+}
+
+const getLogSummary = (row: TaskLogDto) => {
+  const parsed = parseTaskLogContent(row.content)
+  return parsed.message || row.errorMsg || row.remark || '-'
+}
+
+const formatSyncedFailed = (synced?: number, failed?: number) => {
+  if (synced === undefined && failed === undefined) return '-'
+  return `${synced ?? 0}/${failed ?? 0}`
+}
+
+const formatJson = (value: any) => {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
   }
 }
 

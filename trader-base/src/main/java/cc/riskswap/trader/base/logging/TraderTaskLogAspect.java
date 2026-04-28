@@ -10,6 +10,8 @@ import org.slf4j.MDC;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
+import cc.riskswap.trader.base.task.TraderTaskContext;
+import cn.hutool.json.JSONUtil;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -100,12 +102,16 @@ public class TraderTaskLogAspect {
         }
         try {
             if (taskLogStore != null) {
-                taskLogStore.writeFinished(
-                        traceId,
-                        "SUCCESS",
-                        executionMs,
-                        buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "SUCCESS", executionMs, result, null)
-                );
+                String remark = buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "SUCCESS", executionMs, result, null);
+                TraderTaskContext context = findTaskContext(args);
+                if (context == null) {
+                    taskLogStore.writeFinished(traceId, "SUCCESS", executionMs, remark);
+                } else {
+                    if (context.getReport() == null || context.getReport().getMessage() == null || context.getReport().getMessage().isBlank()) {
+                        context.report().setMessage("完成");
+                    }
+                    taskLogStore.writeFinished(traceId, "SUCCESS", executionMs, remark, JSONUtil.toJsonStr(context.report().toJson()), null);
+                }
             }
         } catch (Exception exception) {
             log.error("Persist task success log failed taskName={} traceId={}", taskName, traceId, exception);
@@ -126,16 +132,44 @@ public class TraderTaskLogAspect {
         }
         try {
             if (taskLogStore != null) {
-                taskLogStore.writeFinished(
-                        traceId,
-                        "FAILED",
-                        executionMs,
-                        buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "FAILED", executionMs, null, throwable)
-                );
+                String remark = buildFinishedContent(signature, taskName, taskGroup, traceId, args, logArguments, startTime, "FAILED", executionMs, null, throwable);
+                String errorMsg = buildErrorMsg(throwable);
+                TraderTaskContext context = findTaskContext(args);
+                if (context == null) {
+                    taskLogStore.writeFinished(traceId, "FAILED", executionMs, remark);
+                } else {
+                    if (context.getReport() == null || context.getReport().getMessage() == null || context.getReport().getMessage().isBlank()) {
+                        context.report().setMessage("失败");
+                    }
+                    taskLogStore.writeFinished(traceId, "FAILED", executionMs, remark, JSONUtil.toJsonStr(context.report().toJson()), errorMsg);
+                }
             }
         } catch (Exception exception) {
             log.error("Persist task failure log failed taskName={} traceId={}", taskName, traceId, exception);
         }
+    }
+
+    private TraderTaskContext findTaskContext(Object[] args) {
+        if (args == null) {
+            return null;
+        }
+        for (Object arg : args) {
+            if (arg instanceof TraderTaskContext context) {
+                return context;
+            }
+        }
+        return null;
+    }
+
+    private String buildErrorMsg(Throwable throwable) {
+        if (throwable == null) {
+            return null;
+        }
+        String message = throwable.getMessage();
+        if (message == null || message.isBlank()) {
+            return throwable.getClass().getSimpleName();
+        }
+        return throwable.getClass().getSimpleName() + ": " + message;
     }
 
 

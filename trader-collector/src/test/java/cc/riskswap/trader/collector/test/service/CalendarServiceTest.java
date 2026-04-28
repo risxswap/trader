@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import cc.riskswap.trader.collector.service.CalendarService;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 
 @SpringBootTest
 public class CalendarServiceTest {
@@ -14,6 +15,6 @@ public class CalendarServiceTest {
     
     @Test
     public void testSyncByExchange() {
-        calendarService.syncCalendar();
+        calendarService.syncCalendar(new TraderTaskContext());
     }
 }

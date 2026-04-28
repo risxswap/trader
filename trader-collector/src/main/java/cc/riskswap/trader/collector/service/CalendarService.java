@@ -14,6 +14,7 @@ import cc.riskswap.trader.collector.common.util.TaskContentContext;
 import cc.riskswap.trader.collector.repository.tushare.CalendarTushare;
 import cc.riskswap.trader.base.dao.CalendarDao;
 import cc.riskswap.trader.base.dao.entity.Calendar;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -26,14 +27,17 @@ public class CalendarService {
     @Autowired
     private CalendarTushare calendarTushare;
 
-    public void syncCalendar() {
+    public void syncCalendar(TraderTaskContext context) {
         TaskContentContext.addAttribute("交易所数量", String.valueOf(ExchangeEnum.values().length));
+        long synced = 0L;
         for (ExchangeEnum exchange : ExchangeEnum.values()) {
-            syncByExchange(exchange);
+            synced += syncByExchange(exchange);
         }
+        context.report().addSynced(synced);
+        context.report().setMessage(String.format("交易日历同步完成 synced=%d", synced));
     }
     
-    public void syncByExchange(ExchangeEnum exchange) {
+    private long syncByExchange(ExchangeEnum exchange) {
         Calendar latest = calendarDao.getLatestByExchange(exchange.code);
         CalendarQuery query = new CalendarQuery();
         query.setExchange(exchange.code);
@@ -50,7 +54,7 @@ public class CalendarService {
             TaskContentContext.addDetail("交易日历同步",
                     String.format("%s start=%s,end=%s 无数据", exchange.code, query.getStartDate(), query.getEndDate()));
             log.info("No calendar found for exchange: {}, startDate: {}, endDate: {}", exchange.code, query.getStartDate(), query.getEndDate());
-            return;
+            return 0L;
         }
         log.info("Sync calendar for exchange: {}, startDate: {}, endDate: {}, total:{}", exchange.code, query.getStartDate(), query.getEndDate(), calendars.size());
         calendarDao.delete(exchange.code, query.getStartDate(), query.getEndDate());
@@ -65,5 +69,6 @@ public class CalendarService {
                 String.format("%s start=%s,end=%s,记录=%d,批次=%d",
                         exchange.code, query.getStartDate(), query.getEndDate(), calendars.size(), partitions.size()));
         log.info("Sync calendar for exchange: {} done", exchange.code);
+        return calendars.size();
     }
 }

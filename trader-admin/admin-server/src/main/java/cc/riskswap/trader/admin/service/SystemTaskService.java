@@ -15,6 +15,7 @@ import cc.riskswap.trader.base.dao.SystemTaskDao;
 import cc.riskswap.trader.base.dao.TaskLogDao;
 import cc.riskswap.trader.base.dao.entity.Investment;
 import cc.riskswap.trader.base.dao.entity.SystemTask;
+import cc.riskswap.trader.base.dao.entity.TaskLog;
 import cc.riskswap.trader.admin.exception.Warning;
 import cc.riskswap.trader.base.event.SystemTaskStatusEvent;
 import cc.riskswap.trader.base.task.TraderTaskRefreshMessage;
@@ -22,6 +23,7 @@ import cc.riskswap.trader.base.task.TraderTaskRefreshPublisher;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -105,9 +107,11 @@ public class SystemTaskService {
                 .toList();
         Map<String, Long> counts = taskCodes.isEmpty() ? Map.of() : taskLogDao.countByTaskGroups(taskCodes);
         Map<String, Long> latestExecutionMs = taskCodes.isEmpty() ? Map.of() : taskLogDao.latestExecutionMsByTaskGroups(taskCodes);
+        Map<String, TaskLog> latestLogs = taskCodes.isEmpty() ? Map.of() : taskLogDao.latestLogsByTaskGroups(taskCodes);
         items.forEach(item -> {
             item.setExecutionCount(resolveExecutionCount(item, counts));
             item.setLastExecutionMs(resolveLastExecutionMs(item, latestExecutionMs));
+            applyLatestResult(item, latestLogs.get(item.getTaskCode()));
         });
     }
 
@@ -123,6 +127,24 @@ public class SystemTaskService {
             return null;
         }
         return latestExecutionMs.get(item.getTaskCode());
+    }
+
+    private void applyLatestResult(SystemTaskDto item, TaskLog log) {
+        if (!"SYSTEM".equals(item.getSourceType()) || log == null) {
+            return;
+        }
+        item.setLastTraceId(log.getTraceId());
+        item.setLastErrorMsg(log.getErrorMsg());
+        if (StrUtil.isBlank(log.getContent())) {
+            return;
+        }
+        try {
+            JSONObject obj = JSONUtil.parseObj(log.getContent());
+            item.setLastSyncedCount(obj.getLong("syncedCount"));
+            item.setLastFailedCount(obj.getLong("failedCount"));
+            item.setLastMessage(obj.getStr("message"));
+        } catch (Exception ignored) {
+        }
     }
 
     public List<TaskDefinitionDto> definitions(TaskDefinitionListQuery query) {
@@ -226,6 +248,7 @@ public class SystemTaskService {
         SystemTask task = requireTask(id);
         SystemTaskDto dto = BeanUtil.copyProperties(task, SystemTaskDto.class);
         dto.setSourceType("SYSTEM");
+        applyExecutionSummary(List.of(dto));
         return dto;
     }
 

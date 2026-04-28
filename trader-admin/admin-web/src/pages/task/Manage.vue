@@ -115,6 +115,19 @@
             {{ formatExecutionDuration(row.lastExecutionMs) }}
           </template>
         </el-table-column>
+        <el-table-column label="最近同步" width="120" align="center">
+          <template #default="{ row }">
+            <span v-if="row.lastSyncedCount !== undefined || row.lastFailedCount !== undefined">
+              {{ row.lastSyncedCount ?? 0 }}/{{ row.lastFailedCount ?? 0 }}
+            </span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="最近消息" min-width="220">
+          <template #default="{ row }">
+            <div class="secondary-cell secondary-cell--clamp">{{ row.lastMessage || row.lastErrorMsg || '-' }}</div>
+          </template>
+        </el-table-column>
         <el-table-column label="任务参数" min-width="280">
           <template #default="{ row }">
             <div class="secondary-cell secondary-cell--clamp">

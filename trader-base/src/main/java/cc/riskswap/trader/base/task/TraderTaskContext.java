@@ -13,6 +13,7 @@ public class TraderTaskContext {
     private Map<String, Object> paramsMap;
     private OffsetDateTime runAt;
     private String traceId;
+    private TaskExecutionReport report;
 
     public String getAppName() {
         return appName;
@@ -76,5 +77,20 @@ public class TraderTaskContext {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
+    }
+
+    public TaskExecutionReport getReport() {
+        return report;
+    }
+
+    public void setReport(TaskExecutionReport report) {
+        this.report = report;
+    }
+
+    public TaskExecutionReport report() {
+        if (report == null) {
+            report = new TaskExecutionReport();
+        }
+        return report;
     }
 }

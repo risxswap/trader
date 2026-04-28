@@ -30,6 +30,11 @@ export interface SystemTaskDto {
   version?: number
   executionCount?: number
   lastExecutionMs?: number
+  lastTraceId?: string
+  lastSyncedCount?: number
+  lastFailedCount?: number
+  lastMessage?: string
+  lastErrorMsg?: string
   updatedAt?: string
   createdAt?: string
 }

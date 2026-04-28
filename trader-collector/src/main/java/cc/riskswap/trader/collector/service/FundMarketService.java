@@ -23,6 +23,7 @@ import cc.riskswap.trader.base.dao.FundDao;
 import cc.riskswap.trader.base.dao.FundMarketDao;
 import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.base.dao.entity.FundMarket;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -46,7 +47,7 @@ public class FundMarketService {
      * 1. If the latest trade date differs from current date by more than 6 months, sync by fund code
      * 2. If the difference is less than 6 months, sync by date
      */
-    public void syncFundMarket() {
+    public void syncFundMarket(TraderTaskContext context) {
         log.info("Starting to synchronize fund market data");
         try {
             // Get the latest trade date from database
@@ -57,15 +58,19 @@ public class FundMarketService {
             } catch (Exception e) {
                 log.warn("Failed to get latest trade date", e);
                 TaskContentContext.addError("获取最新行情日期失败: " + e.getMessage());
+                context.report().addFailed(1);
+                context.report().putErrorDetail("fundMarketLatestDateError", e.getMessage());
                 return;
             }
             TaskContentContext.addAttribute("最近行情日期",
                     latestTradeDate == null ? "首次同步" : latestTradeDate.toLocalDate().toString());
-            syncByTradeDate(latestTradeDate);
+            syncByTradeDate(context, latestTradeDate);
             log.info("Fund market data synchronization completed");
         } catch (Exception e) {
             log.error("Failed to synchronize fund market data", e);
             TaskContentContext.addError("同步基金行情失败: " + e.getMessage());
+            context.report().addFailed(1);
+            context.report().putErrorDetail("fundMarketError", e.getMessage());
         }
     }
 
@@ -73,7 +78,7 @@ public class FundMarketService {
      * Synchronize fund market data by date
      * @param lastTradeDate Last trade date
      */
-    public void syncByTradeDate(OffsetDateTime lastTradeDate) {
+    public void syncByTradeDate(TraderTaskContext context, OffsetDateTime lastTradeDate) {
         log.info("Starting to synchronize fund market data by date, last trade date: {}", lastTradeDate);
         if (lastTradeDate == null) {
             TaskContentContext.addDetail("基金行情同步", "未查到历史行情日期，跳过按日期同步");
@@ -128,6 +133,7 @@ public class FundMarketService {
                 for (List<FundMarket> partition : partitions) {
                     fundMarketDao.saveBatch(partition);
                 }
+                context.report().addSynced(fundMarkets.size());
                 TaskContentContext.addMetric("行情同步天数", 1);
                 TaskContentContext.addMetric("行情拉取记录数", fundMarkets.size());
                 TaskContentContext.addMetric("行情批次数", partitions.size());
@@ -149,7 +155,7 @@ public class FundMarketService {
     /**
      * Synchronize market data by fund code
      */
-    public void syncBySymbol() {
+    public void syncBySymbol(TraderTaskContext context) {
         log.info("Starting to synchronize market data by fund code");
         
         List<Fund> fundList = fundDao.listByMarket(FundMarketEnum.ETF.code);
@@ -159,7 +165,7 @@ public class FundMarketService {
         for (Fund fund : fundList) {
             try {
                 String tsCode = fund.getCode();
-                syncBySymbol(tsCode);
+                syncBySymbol(context, tsCode);
             } catch (Exception e) {
                 log.error("Failed to synchronize market data for fund {}", fund.getCode(), e);
                 TaskContentContext.addError(String.format("基金 %s 行情同步失败: %s", fund.getCode(), e.getMessage()));
@@ -169,7 +175,7 @@ public class FundMarketService {
         log.info("Market data synchronization by fund code completed");
     }
 
-    public void syncBySymbol(String tsCode) {
+    public void syncBySymbol(TraderTaskContext context, String tsCode) {
         log.info("Starting to synchronize market data for fund {}", tsCode);
         
         Integer pageNo = 1;
@@ -201,6 +207,7 @@ public class FundMarketService {
         for (List<FundMarket> partition : partitions) {
             fundMarketDao.saveBatch(partition);
         }
+        context.report().addSynced(fundMarkets.size());
         TaskContentContext.addMetric("行情补齐记录数", fundMarkets.size());
         TaskContentContext.addDetail("基金行情补齐",
                 String.format("%s 记录=%d,批次=%d", tsCode, fundMarkets.size(), partitions.size()));

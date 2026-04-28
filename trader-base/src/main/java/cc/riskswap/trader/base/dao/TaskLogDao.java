@@ -49,6 +49,10 @@ public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
     }
 
     public void updateLogByTraceId(String traceId, String status, Long costMs, String remark) {
+        updateLogByTraceId(traceId, status, costMs, remark, null, null);
+    }
+
+    public void updateLogByTraceId(String traceId, String status, Long costMs, String remark, String content, String errorMsg) {
         LambdaQueryWrapper<TaskLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TaskLog::getTraceId, traceId);
         TaskLog log = this.getOne(wrapper, false);
@@ -56,6 +60,12 @@ public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
             log.setStatus(status);
             log.setExecutionMs(costMs);
             log.setRemark(remark);
+            if (content != null) {
+                log.setContent(content);
+            }
+            if (errorMsg != null) {
+                log.setErrorMsg(errorMsg);
+            }
             log.setEndTime(java.time.OffsetDateTime.now());
             this.updateById(log);
         }
@@ -96,6 +106,33 @@ public class TaskLogDao extends ServiceImpl<TaskLogMapper, TaskLog> {
                 continue;
             }
             result.put(log.getTaskGroup(), log.getExecutionMs());
+        }
+        return result;
+    }
+
+    public Map<String, TaskLog> latestLogsByTaskGroups(List<String> taskGroups) {
+        if (taskGroups == null || taskGroups.isEmpty()) {
+            return Map.of();
+        }
+        LambdaQueryWrapper<TaskLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(
+                TaskLog::getTaskGroup,
+                TaskLog::getTraceId,
+                TaskLog::getStatus,
+                TaskLog::getExecutionMs,
+                TaskLog::getStartTime,
+                TaskLog::getContent,
+                TaskLog::getErrorMsg
+        );
+        wrapper.in(TaskLog::getTaskGroup, taskGroups);
+        wrapper.orderByDesc(TaskLog::getStartTime);
+        List<TaskLog> logs = this.list(wrapper);
+        Map<String, TaskLog> result = new LinkedHashMap<>();
+        for (TaskLog log : logs) {
+            if (StrUtil.isBlank(log.getTaskGroup()) || result.containsKey(log.getTaskGroup())) {
+                continue;
+            }
+            result.put(log.getTaskGroup(), log);
         }
         return result;
     }

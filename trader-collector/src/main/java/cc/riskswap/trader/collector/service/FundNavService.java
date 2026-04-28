@@ -10,6 +10,7 @@ import cc.riskswap.trader.base.dao.FundDao;
 import cc.riskswap.trader.base.dao.FundNavDao;
 import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.base.dao.entity.FundNav;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class FundNavService {
     @Autowired
     private FundNavTushare fundNavTushare;
 
-    public void syncFundNav() {
+    public void syncFundNav(TraderTaskContext context) {
         log.info("开始同步基金净值");
         try {
             OffsetDateTime latestNavDate = null;
@@ -44,22 +45,27 @@ public class FundNavService {
             } catch (Exception e) {
                 log.warn("获取最新净值日期失败", e);
                 TaskContentContext.addError("获取最新净值日期失败: " + e.getMessage());
+                context.report().addFailed(1);
+                context.report().putErrorDetail("fundNavLatestDateError", e.getMessage());
                 return;
             }
             TaskContentContext.addAttribute("最近净值日期", latestNavDate == null ? "首次同步" : latestNavDate.toLocalDate().toString());
-            syncByNavDate(latestNavDate);
+            long synced = syncByNavDate(context, latestNavDate);
+            context.report().putErrorDetail("fundNav", java.util.Map.of("synced", synced));
             log.info("基金净值同步完成");
         } catch (Exception e) {
             log.error("同步基金净值失败", e);
             TaskContentContext.addError("同步基金净值失败: " + e.getMessage());
+            context.report().addFailed(1);
+            context.report().putErrorDetail("fundNavError", e.getMessage());
         }
     }
 
-    public void syncByNavDate(OffsetDateTime lastNavDate) {
+    public long syncByNavDate(TraderTaskContext context, OffsetDateTime lastNavDate) {
         log.info("按日期同步基金净值，最后净值日期: {}", lastNavDate);
         if (lastNavDate == null) {
             TaskContentContext.addDetail("基金净值同步", "未查到历史净值日期，跳过按日期同步");
-            return;
+            return 0L;
         }
         LocalDate startDate = lastNavDate.toLocalDate().plusDays(1);
         LocalDate endDate = LocalDate.now();
@@ -68,9 +74,10 @@ public class FundNavService {
         if (startDate.isAfter(endDate)) {
             log.info("数据已是最新，无需同步");
             TaskContentContext.addDetail("基金净值同步", "净值数据已是最新，无需同步");
-            return;
+            return 0L;
         }
 
+        long synced = 0L;
         LocalDate currentDate = startDate;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         while (!currentDate.isAfter(endDate)) {
@@ -119,6 +126,8 @@ public class FundNavService {
                 for (List<FundNav> partition : partitions) {
                     fundNavDao.saveBatch(partition);
                 }
+                context.report().addSynced(distinctFundNavs.size());
+                synced += distinctFundNavs.size();
                 TaskContentContext.addMetric("净值同步天数", 1);
                 TaskContentContext.addMetric("净值拉取记录数", fundNavs.size());
                 TaskContentContext.addMetric("净值入库记录数", distinctFundNavs.size());
@@ -135,6 +144,7 @@ public class FundNavService {
             currentDate = currentDate.plusDays(1);
         }
         log.info("按日期同步基金净值完成");
+        return synced;
     }
 
     public void syncBySymbol() {

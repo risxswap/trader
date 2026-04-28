@@ -13,3 +13,26 @@ export const formatExecutionDuration = (executionMs?: number | null) => {
 
   return `${minutes}分${seconds}秒`
 }
+
+export type ParsedTaskLogContent = {
+  syncedCount?: number
+  failedCount?: number
+  message?: string
+  errorDetail?: any
+}
+
+export const parseTaskLogContent = (content?: string | null): ParsedTaskLogContent => {
+  if (!content) return {}
+  try {
+    const obj = JSON.parse(content)
+    if (!obj || typeof obj !== 'object') return {}
+    return {
+      syncedCount: typeof obj.syncedCount === 'number' ? obj.syncedCount : undefined,
+      failedCount: typeof obj.failedCount === 'number' ? obj.failedCount : undefined,
+      message: typeof obj.message === 'string' ? obj.message : undefined,
+      errorDetail: obj.errorDetail
+    }
+  } catch {
+    return {}
+  }
+}

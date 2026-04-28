@@ -11,6 +11,7 @@ import cc.riskswap.trader.base.dao.FundAdjDao;
 import cc.riskswap.trader.base.dao.FundDao;
 import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.base.dao.entity.FundAdj;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class FundAdjService {
     @Autowired
     private FundAdjTushare fundAdjTushare;
 
-    public void syncFundAdj() {
+    public void syncFundAdj(TraderTaskContext context) {
         log.info("开始同步基金复权因子");
         try {
             OffsetDateTime latestTradeDate = null;
@@ -41,19 +42,23 @@ public class FundAdjService {
             } catch (Exception e) {
                 log.warn("获取最新交易日期失败", e);
                 TaskContentContext.addError("获取最新复权日期失败: " + e.getMessage());
+                context.report().addFailed(1);
+                context.report().putErrorDetail("fundAdjLatestDateError", e.getMessage());
                 return;
             }
             TaskContentContext.addAttribute("最近复权日期",
                     latestTradeDate == null ? "首次同步" : latestTradeDate.toLocalDate().toString());
-            syncByTradeDate(latestTradeDate);
+            syncByTradeDate(context, latestTradeDate);
             log.info("基金复权因子同步完成");
         } catch (Exception e) {
             log.error("同步基金复权因子失败", e);
             TaskContentContext.addError("同步基金复权因子失败: " + e.getMessage());
+            context.report().addFailed(1);
+            context.report().putErrorDetail("fundAdjError", e.getMessage());
         }
     }
 
-    public void syncByTradeDate(OffsetDateTime lastTradeDate) {
+    public void syncByTradeDate(TraderTaskContext context, OffsetDateTime lastTradeDate) {
         log.info("按日期同步基金复权因子，最后交易日期: {}", lastTradeDate);
         if (lastTradeDate == null) {
             TaskContentContext.addDetail("基金复权同步", "未查到历史复权日期，跳过按日期同步");
@@ -103,6 +108,7 @@ public class FundAdjService {
                 for (List<FundAdj> partition : partitions) {
                     fundAdjDao.saveBatch(partition);
                 }
+                context.report().addSynced(fundAdjs.size());
                 TaskContentContext.addMetric("复权同步天数", 1);
                 TaskContentContext.addMetric("复权拉取记录数", fundAdjs.size());
                 TaskContentContext.addMetric("复权批次数", partitions.size());
@@ -119,7 +125,7 @@ public class FundAdjService {
         log.info("按日期同步基金复权因子完成");
     }
 
-    public void syncBySymbol() {
+    public void syncBySymbol(TraderTaskContext context) {
         log.info("按基金代码同步复权因子");
         List<Fund> fundList = fundDao.listByMarket(FundMarketEnum.ETF.code);
         log.info("获取到 {} 个基金", fundList.size());
@@ -127,7 +133,7 @@ public class FundAdjService {
 
         for (Fund fund : fundList) {
             try {
-                syncBySymbol(fund.getCode());
+                syncBySymbol(context, fund.getCode());
             } catch (Exception e) {
                 log.error("同步基金 {} 复权因子失败", fund.getCode(), e);
                 TaskContentContext.addError(String.format("基金 %s 复权同步失败: %s", fund.getCode(), e.getMessage()));
@@ -136,7 +142,7 @@ public class FundAdjService {
         log.info("按基金代码同步复权因子完成");
     }
 
-    public void syncBySymbol(String tsCode) {
+    public void syncBySymbol(TraderTaskContext context, String tsCode) {
         log.info("开始同步基金 {} 的复权因子", tsCode);
         Integer pageNo = 1;
         Integer pageSize = 2000;
@@ -169,6 +175,7 @@ public class FundAdjService {
         for (List<FundAdj> partition : partitions) {
             fundAdjDao.saveBatch(partition);
         }
+        context.report().addSynced(fundAdjs.size());
         TaskContentContext.addMetric("复权补齐记录数", fundAdjs.size());
         TaskContentContext.addDetail("基金复权补齐",
                 String.format("%s 记录=%d,批次=%d", tsCode, fundAdjs.size(), partitions.size()));

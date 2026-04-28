@@ -44,6 +44,6 @@ public class FundMarketSyncTask implements CollectorTask {
     @Override
     @TraderTaskLog("基金行情同步任务")
     public void execute(TraderTaskContext context) {
-        fundMarketService.syncFundMarket();
+        fundMarketService.syncFundMarket(context);
     }
 }

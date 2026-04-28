@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.task.TaskDecorator;
+import org.springframework.lang.Nullable;
 
 @Configuration(proxyBeanMethods = false)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
@@ -26,7 +27,7 @@ public class TraderLoggingAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public TraderTaskLogAspect traderTaskLogAspect(TaskLogStore taskLogStore) {
+    public TraderTaskLogAspect traderTaskLogAspect(@Nullable TaskLogStore taskLogStore) {
         return new TraderTaskLogAspect(taskLogStore);
     }
 

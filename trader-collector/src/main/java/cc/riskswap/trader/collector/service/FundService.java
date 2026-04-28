@@ -24,6 +24,7 @@ import cc.riskswap.trader.collector.repository.tushare.FundTushare;
 import cc.riskswap.trader.base.dao.FundDao;
 import cc.riskswap.trader.base.dao.entity.Fund;
 import cc.riskswap.trader.base.dao.entity.FundMarket;
+import cc.riskswap.trader.base.task.TraderTaskContext;
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,15 +47,26 @@ public class FundService {
     /**
      * 同步基金信息
      */
-    public void syncFund() {
+    public void syncFund(TraderTaskContext context) {
         TaskContentContext.addAttribute("同步市场", "E/L, O/L");
-        syncFund("E", "L");
-        syncFund("O", "L");
-        fundNavService.syncFundNav();
+        SyncResult first = syncFund("E", "L");
+        SyncResult second = syncFund("O", "L");
+        long synced = (long) first.inserted + first.updated + second.inserted + second.updated;
+        long failed = (long) first.errors + second.errors;
+        context.report().addSynced(synced);
+        context.report().addFailed(failed);
+        context.report().setMessage(String.format("基金基础信息同步完成 synced=%d failed=%d", synced, failed));
+        context.report().putErrorDetail("fundBase", Map.of(
+                "pulled", first.total + second.total,
+                "inserted", first.inserted + second.inserted,
+                "updated", first.updated + second.updated,
+                "errors", first.errors + second.errors
+        ));
+        fundNavService.syncFundNav(context);
         TaskContentContext.addDetail("执行链路", "基金基础信息同步完成后触发基金净值同步");
     }
 
-    private void syncFund(String market, String status) {
+    private SyncResult syncFund(String market, String status) {
         log.info("syncFund,start, market: {}, status: {}", market, status);
         Integer pageNo = 1;
         Integer pageSize = 500;
@@ -104,6 +116,10 @@ public class FundService {
                 String.format("market=%s,status=%s,分页=%d,拉取=%d,新增=%d,更新=%d,异常=%d",
                         market, status, pageCount, total, inserted, updated, errors));
         log.info("syncFund,end, market: {}, status: {}, total: {}", market, status, total);
+        return new SyncResult(total, inserted, updated, errors);
+    }
+
+    private record SyncResult(int total, int inserted, int updated, int errors) {
     }
 
     /**
