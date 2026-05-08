@@ -140,39 +140,41 @@ public class CorrelationService {
     public int cleanupHistoricalCorrelations() {
         log.info("Start cleanup of historical correlations.");
         int deletedCount = 0;
-        int offset = 0;
         List<Long> deleteBuffer = new ArrayList<>();
         int cleanupDeleteBatchSize = correlationProperties.getSafeCleanupDeleteBatchSize();
+        int offset = 0;
+        List<CorrelationDuplicateGroup> duplicateGroups = new ArrayList<>();
 
         while (true) {
             List<CorrelationDuplicateGroup> groups = correlationDao.listDuplicateGroups(CLEANUP_GROUP_PAGE_SIZE, offset);
             if (groups == null || groups.isEmpty()) {
                 break;
             }
+            duplicateGroups.addAll(groups);
+            offset += CLEANUP_GROUP_PAGE_SIZE;
+        }
 
-            for (CorrelationDuplicateGroup group : groups) {
-                List<Long> historicalIds = correlationDao.listHistoricalIds(
-                        group.getAsset1(), group.getAsset2(), group.getPeriod());
-                if (historicalIds == null || historicalIds.isEmpty()) {
-                    continue;
-                }
-
-                for (Long historicalId : historicalIds) {
-                    deleteBuffer.add(historicalId);
-                    if (deleteBuffer.size() >= cleanupDeleteBatchSize) {
-                        correlationDao.deleteByIds(new ArrayList<>(deleteBuffer));
-                        deletedCount += deleteBuffer.size();
-                        deleteBuffer.clear();
-                    }
-                }
+        for (CorrelationDuplicateGroup group : duplicateGroups) {
+            List<Long> historicalIds = correlationDao.listHistoricalIds(
+                    group.getAsset1(), group.getAsset2(), group.getPeriod());
+            if (historicalIds == null || historicalIds.isEmpty()) {
+                continue;
             }
 
-            offset += CLEANUP_GROUP_PAGE_SIZE;
+            for (Long historicalId : historicalIds) {
+                deleteBuffer.add(historicalId);
+                if (deleteBuffer.size() >= cleanupDeleteBatchSize) {
+                    correlationDao.deleteByIds(new ArrayList<>(deleteBuffer));
+                    deletedCount += deleteBuffer.size();
+                    deleteBuffer.clear();
+                }
+            }
         }
 
         if (!deleteBuffer.isEmpty()) {
             correlationDao.deleteByIds(new ArrayList<>(deleteBuffer));
             deletedCount += deleteBuffer.size();
+            deleteBuffer.clear();
         }
 
         log.info("Finished cleanup of historical correlations. deleted={}", deletedCount);

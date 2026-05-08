@@ -285,6 +285,43 @@ class CorrelationServiceTest {
         ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
         Mockito.verify(correlationDao, Mockito.times(2)).deleteByIds(captor.capture());
         Assertions.assertEquals(List.of(List.of(1L, 2L), List.of(3L)), captor.getAllValues());
+        Mockito.verify(correlationDao).listDuplicateGroups(200, 0);
+        Mockito.verify(correlationDao).listDuplicateGroups(200, 200);
+    }
+
+    @Test
+    void should_collect_all_duplicate_group_pages_before_deleting_historical_correlations() throws Exception {
+        CorrelationDao correlationDao = Mockito.mock(CorrelationDao.class);
+        FundDao fundDao = Mockito.mock(FundDao.class);
+        FundNavDao fundNavDao = Mockito.mock(FundNavDao.class);
+        StatisticCorrelationProperties properties = new StatisticCorrelationProperties();
+        properties.setCleanupDeleteBatchSize(10);
+        CorrelationService service = Assertions.assertDoesNotThrow(
+                () -> createService(correlationDao, fundDao, fundNavDao, properties));
+
+        Mockito.when(correlationDao.listDuplicateGroups(200, 0))
+                .thenReturn(List.of(group("A", "B", "1Y")));
+        Mockito.when(correlationDao.listDuplicateGroups(200, 200))
+                .thenReturn(List.of(group("C", "D", "1Y")));
+        Mockito.when(correlationDao.listDuplicateGroups(200, 400))
+                .thenReturn(List.of());
+        Mockito.when(correlationDao.listHistoricalIds("A", "B", "1Y"))
+                .thenReturn(List.of(1L));
+        Mockito.when(correlationDao.listHistoricalIds("C", "D", "1Y"))
+                .thenReturn(List.of(2L));
+
+        int deleted = service.cleanupHistoricalCorrelations();
+
+        Assertions.assertEquals(2, deleted);
+        Mockito.verify(correlationDao).listDuplicateGroups(200, 0);
+        Mockito.verify(correlationDao).listDuplicateGroups(200, 200);
+        Mockito.verify(correlationDao).listDuplicateGroups(200, 400);
+        Mockito.verify(correlationDao).listHistoricalIds("A", "B", "1Y");
+        Mockito.verify(correlationDao).listHistoricalIds("C", "D", "1Y");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        Mockito.verify(correlationDao).deleteByIds(captor.capture());
+        Assertions.assertEquals(List.of(1L, 2L), captor.getValue());
     }
 
     private int invokeBatch(CorrelationService service, List<Fund> funds, String period) throws Exception {
