@@ -7,5 +7,7 @@
             "command": "mvn clean install -DskipTests",
             "debug": false
         }
-    ]
+    ],
+    "java.compile.nullAnalysis.mode": "automatic",
+    "editor.fontSize": 14
 }

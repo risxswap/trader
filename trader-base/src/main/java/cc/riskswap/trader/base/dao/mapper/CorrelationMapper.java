@@ -112,10 +112,11 @@ public interface CorrelationMapper extends BaseMapper<Correlation> {
             "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
             "#{id}",
             "</foreach>",
+            " SETTINGS mutations_sync = 1",
             "</script>"
     })
     int deleteByIds(@Param("ids") List<Long> ids);
 
-    @Update("ALTER TABLE correlation DELETE WHERE id = #{id}")
+    @Update("ALTER TABLE correlation DELETE WHERE id = #{id} SETTINGS mutations_sync = 1")
     int deleteByPrimaryId(@Param("id") Long id);
 }
