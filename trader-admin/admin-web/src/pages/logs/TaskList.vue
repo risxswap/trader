@@ -6,7 +6,7 @@
         <div class="subtitle">聚合查看任务运行状态、执行时长、异常信息和执行内容</div>
       </div>
       <div class="page-header__meta">
-        <el-tag effect="plain" type="primary">日志管理</el-tag>
+        <el-tag effect="plain" type="primary">任务调度</el-tag>
         <el-tag effect="plain" type="warning">任务日志</el-tag>
         <el-tag effect="plain" type="info">共 {{ total }} 条</el-tag>
       </div>

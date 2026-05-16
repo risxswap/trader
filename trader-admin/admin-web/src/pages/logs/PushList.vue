@@ -1,12 +1,12 @@
 <template>
-  <div class="page-container">
-    <div class="page-header">
+  <div class="page-container" :class="{ 'page-container--embedded': embedded }">
+    <div v-if="!embedded" class="page-header">
       <div class="page-header__content">
         <div class="title">消息日志</div>
         <div class="subtitle">统一查看消息渠道、消息内容、接收人和发送状态</div>
       </div>
       <div class="page-header__meta">
-        <el-tag effect="plain" type="primary">日志管理</el-tag>
+        <el-tag effect="plain" type="primary">消息中心</el-tag>
         <el-tag effect="plain" type="info">共 {{ total }} 条</el-tag>
       </div>
     </div>
@@ -60,14 +60,21 @@
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="tableData" stripe class="full">
-        <el-table-column label="消息信息" min-width="240">
+      <el-table
+        v-loading="loading"
+        :data="tableData"
+        stripe
+        class="full"
+        :class="{ 'full--embedded': embedded }"
+        @row-click="handleRowClick">
+        <el-table-column label="消息" min-width="260">
           <template #default="{ row }">
             <div class="primary-cell">{{ row.title || '-' }}</div>
-            <div class="secondary-cell">{{ row.type || '未分类消息' }}</div>
+            <div v-if="!embedded" class="secondary-cell">{{ row.type || '未分类消息' }}</div>
+            <div v-else class="secondary-cell secondary-cell--clamp">{{ row.content || '暂无消息内容' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="渠道与接收人" min-width="200">
+        <el-table-column v-if="!embedded" label="渠道与接收人" min-width="200">
           <template #default="{ row }">
             <div class="cell-tags">
               <el-tag effect="plain" type="info" size="small">{{ row.channel || '-' }}</el-tag>
@@ -76,7 +83,7 @@
             <div class="secondary-cell">{{ row.recipient || '未填写接收人' }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="消息内容" min-width="320">
+        <el-table-column v-if="!embedded" label="消息内容" min-width="320">
           <template #default="{ row }">
             <el-tooltip effect="light" placement="top-start" popper-class="message-content-tooltip">
               <template #content>
@@ -86,13 +93,23 @@
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column label="时间信息" min-width="220">
+        <el-table-column v-if="!embedded" label="时间信息" min-width="220">
           <template #default="{ row }">
             <div class="primary-cell">创建 {{ formatDate(row.createdAt) }}</div>
             <div class="secondary-cell">更新 {{ formatDate(row.updatedAt) }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right" align="center">
+        <el-table-column v-else label="状态" width="88" align="center">
+          <template #default="{ row }">
+            <el-tag :type="statusTagType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="embedded" label="时间" width="150" align="right">
+          <template #default="{ row }">
+            <div class="embedded-time">{{ formatCompactDate(row.createdAt) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="!embedded" label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button link type="primary" @click="showDetail(row.id)">查看详情</el-button>
           </template>
@@ -171,6 +188,10 @@ import { getMsgPushLogDetail, listMsgPushLogs } from '../../services/log'
 import type { MsgPushLogDto, MsgPushLogQuery } from '../../services/log'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
+
+const { embedded = false } = defineProps<{
+  embedded?: boolean
+}>()
 
 const loading = ref(false)
 const detailLoading = ref(false)
@@ -253,9 +274,19 @@ const showDetail = async (id: number) => {
   }
 }
 
+const handleRowClick = (row: MsgPushLogDto) => {
+  if (!embedded) return
+  showDetail(row.id)
+}
+
 const formatDate = (date: string) => {
   if (!date) return '-'
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+}
+
+const formatCompactDate = (date: string) => {
+  if (!date) return '-'
+  return dayjs(date).format('MM-DD HH:mm')
 }
 
 const renderMarkdown = (content?: string) => {
@@ -285,6 +316,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.page-container--embedded {
+  gap: 12px;
 }
 
 .page-header,
@@ -332,9 +367,20 @@ onMounted(() => {
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
+.page-container--embedded .search-card,
+.page-container--embedded .table-card {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
 .search-card :deep(.el-card__body),
 .table-card :deep(.el-card__body) {
   padding: 24px;
+}
+
+.page-container--embedded .search-card :deep(.el-card__body),
+.page-container--embedded .table-card :deep(.el-card__body) {
+  padding: 16px;
 }
 
 .search-header,
@@ -412,6 +458,14 @@ onMounted(() => {
   color: #909399;
 }
 
+.secondary-cell--clamp {
+  display: -webkit-box;
+  line-clamp: 1;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .content-cell {
   font-size: 13px;
   line-height: 20px;
@@ -440,6 +494,24 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   border-top: 1px solid #f0f2f5;
+}
+
+.full--embedded :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.full--embedded :deep(.el-table__cell) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.full--embedded .primary-cell {
+  font-size: 14px;
+}
+
+.embedded-time {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .search-meta span,

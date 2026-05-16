@@ -46,11 +46,13 @@
           </div>
         </div>
         <div class="header-right">
-          <div class="notice-entry">
-            <el-badge is-dot>
-              <el-icon :size="18"><Bell /></el-icon>
-            </el-badge>
-          </div>
+          <el-tooltip content="消息日志" placement="bottom">
+            <button class="notice-entry" type="button" aria-label="打开消息日志" @click="openMessageLogDrawer">
+              <el-badge is-dot>
+                <el-icon :size="18"><Bell /></el-icon>
+              </el-badge>
+            </button>
+          </el-tooltip>
         </div>
         <div class="header-user">
           <el-dropdown>
@@ -101,6 +103,9 @@
       <el-button type="primary" :loading="pwdLoading" @click="submitChangePwd">确定</el-button>
     </template>
   </el-dialog>
+  <el-drawer v-model="messageLogDrawerVisible" title="消息日志" size="640px" class="message-log-drawer" destroy-on-close>
+    <PushList embedded />
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
@@ -111,6 +116,7 @@ import { changePassword } from '../services/auth'
 import { DataBoard, Histogram, TrendCharts, Coin, Setting, Fold, Expand, Aim, Document, OfficeBuilding, Bell, Monitor } from '@element-plus/icons-vue'
 import { appSideMenus } from '../router/index'
 import TagsView from './TagsView.vue'
+import PushList from '../pages/logs/PushList.vue'
 
 type TagView = {
   title: string
@@ -155,6 +161,10 @@ const onLogout = () => {
 const collapsed = ref(false)
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value
+}
+const messageLogDrawerVisible = ref(false)
+const openMessageLogDrawer = () => {
+  messageLogDrawerVisible.value = true
 }
 const visitedViews = ref<TagView[]>([])
 const cachedViews = ref<string[]>([])
@@ -434,6 +444,19 @@ const submitChangePwd = async () => {
 .notice-entry {
   width: 40px;
   color: #475569;
+  padding: 0;
+  cursor: pointer;
+}
+
+.notice-entry:hover {
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.notice-entry:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .header-user {
@@ -466,6 +489,17 @@ const submitChangePwd = async () => {
   overflow-y: auto;
 }
 
+:deep(.message-log-drawer .el-drawer__body) {
+  padding: 20px;
+  background: #f3f6fb;
+}
+
+:deep(.message-log-drawer .el-drawer__header) {
+  margin-bottom: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e7edf5;
+}
+
 .page-shell {
   min-height: 100%;
 }
@@ -491,6 +525,10 @@ const submitChangePwd = async () => {
 
   .layout-main {
     padding: 16px;
+  }
+
+  :deep(.message-log-drawer) {
+    width: 100% !important;
   }
 }
 </style>

@@ -11,7 +11,6 @@ import InvestmentTrading from '../pages/investment/TradingList.vue'
 import BrokerList from '../pages/investment/BrokerList.vue'
 import BrokerDetail from '../pages/investment/BrokerDetail.vue'
 import CalendarList from '../pages/exchange/CalendarList.vue'
-import PushList from '../pages/logs/PushList.vue'
 import PublicList from '../pages/funds/List.vue'
 import EtfList from '../pages/etf/List.vue'
 import EtfDetail from '../pages/etf/Detail.vue'
@@ -215,6 +214,14 @@ export const appRouteChildren: RouteRecordRaw[] = [
         }
       },
       {
+        path: '/task/log',
+        name: 'TaskList',
+        component: wrapRouteComponent('TaskList', TaskList),
+        meta: {
+          title: '任务日志'
+        }
+      },
+      {
         path: '/task/detail',
         name: 'TaskDetail',
         component: wrapRouteComponent('TaskDetail', TaskDetail),
@@ -345,33 +352,6 @@ export const appRouteChildren: RouteRecordRaw[] = [
         component: wrapRouteComponent('CalendarList', CalendarList),
         meta: {
           title: '交易日历'
-        }
-      }
-    ]
-  },
-  {
-    path: '/logs',
-    component: wrapRouteGroup('LogsMenuGroup'),
-    redirect: '/logs/push',
-    meta: {
-      title: '日志管理',
-      menuIcon: 'Document'
-    },
-    children: [
-      {
-        path: '/logs/push',
-        name: 'PushList',
-        component: wrapRouteComponent('PushList', PushList),
-        meta: {
-          title: '消息日志'
-        }
-      },
-      {
-        path: '/logs/task',
-        name: 'TaskList',
-        component: wrapRouteComponent('TaskList', TaskList),
-        meta: {
-          title: '任务日志'
         }
       }
     ]
